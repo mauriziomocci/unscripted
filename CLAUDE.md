@@ -204,3 +204,8 @@ Every new work item uses Spec Kit: `/speckit-specify` (branch + `specs/<branch>/
 | `README.md` / `README.it.md` | What the game is, how to run it |
 | `docs/alignment.md` | Known, temporary differences between the web app and the artifact |
 | `specs/` | Specs, plans and tasks of each work item |
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan
+<!-- SPECKIT END -->

@@ -30,3 +30,9 @@ pnpm-debug.log*
 .idea/
 .vscode/
 *.swp
+
+# Claude Code: keep only the Spec Kit skills
+.claude/*
+!.claude/skills/
+.claude/skills/*/
+!.claude/skills/speckit-*/
