@@ -1,6 +1,6 @@
 # Prompt for Claude Code: continue the Unscripted v1 port
 
-Paste everything below the line into Claude Code, started on the Mac in an empty working folder (for example `~/Projects`).
+Paste everything below the line into Claude Code, started on the Mac in an empty working folder (`/Users/mauriziomocci/Documents/workspace/Opensource`).
 
 ---
 
@@ -10,8 +10,8 @@ You are taking over the project **Unscripted** (an open-source game: free-willed
 
 1. Clone the repository from the bundle and publish it:
    ```bash
-   git clone ~/Downloads/unscripted.bundle ~/Projects/unscripted
-   cd ~/Projects/unscripted
+   git clone ~/Downloads/unscripted.bundle /Users/mauriziomocci/Documents/workspace/Opensource/unscripted
+   cd /Users/mauriziomocci/Documents/workspace/Opensource/unscripted
    git remote set-url origin https://github.com/mauriziomocci/unscripted.git
    git push -u origin main develop 20261113-111328-v1-port
    git checkout 20261113-111328-v1-port
@@ -19,11 +19,11 @@ You are taking over the project **Unscripted** (an open-source game: free-willed
    The GitHub repository `mauriziomocci/unscripted` already exists and is empty.
 2. Unpack the reference implementation **outside** the repository, as read-only reference material:
    ```bash
-   mkdir -p ~/Projects/unscripted-reference
-   unzip -q ~/Downloads/esperimento-isola/esperimento-isola-sorgenti.zip -d ~/Projects/unscripted-reference
+   mkdir -p /Users/mauriziomocci/Documents/workspace/Opensource/unscripted-reference
+   unzip -q ~/Downloads/esperimento-isola/esperimento-isola-sorgenti.zip -d /Users/mauriziomocci/Documents/workspace/Opensource/unscripted-reference
    ```
-   The sources are in `~/Projects/unscripted-reference/island/live/`, with `sim.js` and the three.js, OrbitControls and jsPDF copies in `~/Projects/unscripted-reference/island/`. The built page is `~/Downloads/esperimento-isola/esperimento-sociale-isola-talkshow.html`, the same build as the published artifact version `1794502765-533a`. Player feedback history, in Italian, is in `island/lavori-2026-11-12/diario-2026-11-12.md` and in `~/Downloads/esperimento-isola/diario-2026-11-12.md`.
-3. Verify the reference is the right one: `md5 ~/Projects/unscripted-reference/island/live/talk.js` must print `c59b511113266df966734d3b747442cd`.
+   The sources are in `/Users/mauriziomocci/Documents/workspace/Opensource/unscripted-reference/island/live/`, with `sim.js` and the three.js, OrbitControls and jsPDF copies in `/Users/mauriziomocci/Documents/workspace/Opensource/unscripted-reference/island/`. The built page is `~/Downloads/esperimento-isola/esperimento-sociale-isola-talkshow.html`, the same build as the published artifact version `1794502765-533a`. Player feedback history, in Italian, is in `island/lavori-2026-11-12/diario-2026-11-12.md` and in `~/Downloads/esperimento-isola/diario-2026-11-12.md`.
+3. Verify the reference is the right one: `md5 /Users/mauriziomocci/Documents/workspace/Opensource/unscripted-reference/island/live/talk.js` must print `c59b511113266df966734d3b747442cd`.
 4. Read, in this order and in full: `CLAUDE.md`, `.specify/memory/constitution.md`, `README.md`, `specs/20261113-111328-v1-port/design-notes.md`. They are binding. If they disagree, the constitution wins, then CLAUDE.md, then the design notes.
 5. Report what you found, then wait for my go-ahead.
 
