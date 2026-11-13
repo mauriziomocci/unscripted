@@ -137,6 +137,21 @@ Island rules to keep:
 
 Characters are never scripted: code decides only the physical world, turn order, budgets and rules. Keep the prompt wording exactly; any change in wording is a behaviour change and needs my approval.
 
+## 3b. How sameness is proven (binding for every WI)
+
+The goal is that the new project behaves like the current artifact: the same rules, prompts, probabilities, timings, screens and features. Publishing the artifact on claude.ai is not required. The reference code in `unscripted-reference` is the **oracle**. Compare every ported piece against it, not against a description of it.
+
+1. **Differential tests.** For every ported module, run the original headless (through the `tools/golden` shim) and the new core with the same seed, the same fake clock and the same mock answers. Compare:
+   - the state after N ticks;
+   - the sequence of LLM call kinds;
+   - the events and the chronicle.
+
+   Every difference is either a bug to fix or a deliberate choice recorded in `docs/alignment.md` with my approval.
+2. **Byte-identical prompts.** For every call kind, given the same state, the prompt built by the new core must be byte-identical to the one built by the original, with one test per kind.
+3. **Verified constants.** Read every probability, timing, threshold and cap from the original code and annotate it with file and line. Never take a number from memory, or from this prompt, without checking it.
+4. **UI.** For every screen and panel of the original, the new version has the same features, the same commands (keyboard shortcuts included) and the same Italian texts. Check each one with a side-by-side Playwright screenshot of old and new, and with a row in `docs/parity.md`. The graphics may be slightly better but must stay recognizable: nothing is removed or moved without my approval.
+5. **Playtest.** At the end of every WI, prepare two playtests for me: old and new side by side with the same seed and the mock, and a game with the real model. A WI closes only with my approval.
+
 ## 4. How to work (binding)
 
 Follow the workflow in CLAUDE.md for every work item, with no shortcuts:
