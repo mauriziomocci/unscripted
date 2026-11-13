@@ -29,12 +29,12 @@ pnpm --filter @unscripted/artifact build   # single-file Claude artifact
 
 ## Architecture
 
-**Stack**: TypeScript everywhere | pnpm workspaces | React + Vite + three.js (front end) | Node + Fastify (back end) | SQLite for saves and archive (server side) | Vitest | ESLint + Prettier | Docker Compose
+**Stack**: TypeScript everywhere | pnpm workspaces | React + Vite + three.js (front end) | Node + Fastify (back end) | PostgreSQL (Drizzle ORM, versioned migrations) for archive, games and event log | Vitest | ESLint + Prettier | Docker Compose
 
 **Workspaces**:
 - `packages/core` — the game engine. Pure TypeScript, no DOM, no Node APIs. Characters and archive model, island simulation, talk show, prompts, reports. Every environment lives here.
 - `apps/web` — React front end. Rendering, input, panels. No game rules.
-- `apps/server` — Fastify back end: LLM proxy (Anthropic, LM Studio), model listing, persistence. Holds secrets; the browser never sees an API key.
+- `apps/server` — Fastify back end: LLM proxy (Anthropic, LM Studio), model listing, persistence in PostgreSQL. Holds secrets; the browser never sees an API key.
 - `apps/artifact` — builds the single self-contained HTML page published as a claude.ai artifact, from the same `packages/core`.
 
 **LLM access** goes through one interface in core:
@@ -51,7 +51,7 @@ interface LlmClient {
 
 Implementations: `HttpLlmClient` (web app, calls `apps/server`), `ArtifactLlmClient` (artifact, calls the artifact runtime's `sample` capability). Providers on the server: `anthropic`, `lmstudio` (OpenAI-compatible, `LMSTUDIO_BASE_URL`, default `http://host.docker.internal:1234/v1`). Model names come from configuration or from the provider's model list, never hard-coded in core.
 
-**Storage** goes through one interface in core (`Store`): server-backed in the web app, IndexedDB/localStorage in the artifact.
+**Storage** goes through one interface in core (`Store`): server-backed (PostgreSQL) in the web app, IndexedDB in the artifact. Both persist the same data model: versioned characters, games, an append-only event log, periodic state snapshots, reports and LLM call records.
 
 ---
 

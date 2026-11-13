@@ -81,7 +81,7 @@ gioco:
 
 | Forma | Cos'è | Modello linguistico |
 |---|---|---|
-| **App web** (questo repository) | Front end React e un piccolo back end Node, avviati con Docker Compose | API di Anthropic Claude, oppure qualsiasi modello locale servito da [LM Studio](https://lmstudio.ai/) |
+| **App web** (questo repository) | Front end React, back end Node e database PostgreSQL, avviati con Docker Compose | API di Anthropic Claude, oppure qualsiasi modello locale servito da [LM Studio](https://lmstudio.ai/) |
 | **Artifact di Claude** | Una sola pagina autosufficiente che gira dentro claude.ai | Il piano Claude di chi la apre |
 
 La logica di gioco vive in un unico pacchetto condiviso. Entrambe le forme
@@ -91,7 +91,7 @@ vengono costruite da lì, quindi non possono disallinearsi.
 unscripted/
   packages/core/     motore di gioco: personaggi, isola, talk show, prompt, resoconti
   apps/web/          front end React (Vite, three.js)
-  apps/server/       back end Node: proxy verso i modelli, elenco modelli, salvataggi e archivio
+  apps/server/       back end Node: proxy verso i modelli, elenco modelli, salvataggi e archivio (PostgreSQL)
   apps/artifact/     costruzione dell'artifact a pagina singola dallo stesso core
   compose/           Dockerfile ed entrypoint
   docs/              note di progetto e specifiche

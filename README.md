@@ -77,7 +77,7 @@ Unscripted runs in two forms that always share the same game engine:
 
 | Form | What it is | Language model |
 |---|---|---|
-| **Web app** (this repository) | React front end and a small Node back end, run with Docker Compose | Anthropic Claude API, or any local model served by [LM Studio](https://lmstudio.ai/) |
+| **Web app** (this repository) | React front end, a Node back end and a PostgreSQL database, run with Docker Compose | Anthropic Claude API, or any local model served by [LM Studio](https://lmstudio.ai/) |
 | **Claude artifact** | A single self-contained page that runs inside claude.ai | The Claude plan of whoever opens it |
 
 The game logic lives in one shared package. Both forms are built from it, so
@@ -87,7 +87,7 @@ they cannot drift apart.
 unscripted/
   packages/core/     game engine: characters, island, talk show, prompts, reports
   apps/web/          React front end (Vite, three.js)
-  apps/server/       Node back end: LLM proxy, model list, saves and archive
+  apps/server/       Node back end: LLM proxy, model list, saves and archive (PostgreSQL)
   apps/artifact/     build of the single-page Claude artifact from the same core
   compose/           Dockerfiles and entrypoints
   docs/              design notes and specs
