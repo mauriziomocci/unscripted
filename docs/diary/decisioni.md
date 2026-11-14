@@ -100,6 +100,23 @@ Ogni decisione presa dalla trinità o dal solo revisore, con le posizioni, i cin
 - **Restano al proprietario:** la pubblicazione dei personaggi pronti, le aggiunte al contratto della sezione 2.9, e la conferma delle decisioni provvisorie da D-14-2 a D-14-6.
 - **Stato:** approvata in via provvisoria, in attesa di conferma.
 
+### D-14-8: il plan si rimanda a una nuova sessione
+
+- **Chi ha deciso:** la trinità, con il coordinatore nel ruolo di Domenico.
+- **Situazione:** alle 19:46 mancavano 74 minuti allo stop delle 21:00. Il plan di Spec Kit richiede `research.md`, `data-model.md`, i contratti, `quickstart.md`, il controllo della costituzione e un giro di revisione. Le versioni delle dipendenze vanno verificate nella documentazione.
+- **Ancora da scegliere:** se fare il plan sul branch ombrello o su un branch proprio del WI-1, come chiede la D6.
+- **Decisione:** fermarsi a un punto pulito e fare il plan in una sessione nuova.
+- **Perché:**
+  - un plan a metà, senza revisione, è peggio di un punto di arresto pulito;
+  - il contesto della sessione che coordina è al 45%, e le regole sulla gestione dei token chiedono una sessione nuova per ogni blocco grande.
+- **I cinque costi:**
+  - token: si risparmia la rilettura di una sessione lunga;
+  - tempo: una sera persa;
+  - qualità: invariata;
+  - modo di lavorare: rispettato;
+  - giocatore: nessun effetto.
+- **Stato:** in attesa di conferma.
+
 ### Non deciso, riservato al proprietario
 
 Le aggiunte al contratto API previste dal WI-2 in poi (sezione 2.9 della spec). La regola «un contratto consegnato non cambia» le riserva al proprietario: servono il suo permesso esplicito o un profilo `pe.autonomy` con `contract`. Il WI-1 non ne dipende.
