@@ -52,7 +52,7 @@ Ogni decisione presa dalla trinità o dal solo revisore, con le posizioni, i cin
 - **Proposta:** pubblicarli così come sono. Il prompt di handoff chiede di copiare i sorgenti senza modificarli (FR-080), e la build identica byte per byte (SC-003) richiede `archpack.js` intatto.
 - **Perché la scelta non è nostra:** lo stesso prompt vieta i nomi reali (sezione 6), e due nomi del pacchetto richiamano figure pubbliche reali. Inoltre il push su un repository pubblico è un rilascio irreversibile.
 - **Nel frattempo:** i sorgenti copiati si possono committare in locale, ma non si pubblicano.
-- **Stato:** in attesa della decisione del proprietario. Se vuole un pacchetto diverso, la via è un pacchetto in più nel nuovo core dal WI-2, non una modifica del vecchio.
+- **Stato:** **confermata dal proprietario** il 2026-11-14, in chat: «Sì, così come sono». Il blocco della pubblicazione è tolto: sorgenti copiati, fixture, seed e golden si possono pubblicare, e la CI su GitHub può girare.
 
 ### D-14-4: deviazioni C1 e C5 accettate in via provvisoria
 
