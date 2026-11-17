@@ -120,3 +120,61 @@ Ogni decisione presa dalla trinità o dal solo revisore, con le posizioni, i cin
 ### Non deciso, riservato al proprietario
 
 Le aggiunte al contratto API previste dal WI-2 in poi (sezione 2.9 della spec). La regola «un contratto consegnato non cambia» le riserva al proprietario: servono il suo permesso esplicito o un profilo `pe.autonomy` con `contract`. Il WI-1 non ne dipende.
+
+## 2026-11-17
+
+### D-17-0: decisione del proprietario e modalità autonoma
+
+- **Decisione del proprietario (in chat, 14:46):** «deve entrare tutto». Tutto ciò che l'artifact ha guadagnato fra il 14 e il 17 novembre (la Venture e le modifiche ad archivio, report e romanzi) entra nella v1, senza rimandare niente. Il riferimento vincolante diventa `unscripted-reference/2026-11-17/`.
+- **Autonomia (in chat, 14:53):** «vai in totale autonomia, qualunque decisione spetterà alla trinità». La forma è una finestra, perché `pe.autonomy` non è impostato.
+  - Perimetro: i passi 1-6 della richiesta del 17 novembre, cioè verificare il riferimento, leggere i documenti, progettare gli emendamenti, revisionarli, committare, aggiornare diario e registro e fare il resoconto.
+  - Inizio: 14:53. Fine: 21:00, perché il proprietario non ha indicato un orario.
+  - Aperture: `spec`, `schema`, `design`, `publish`. L'apertura `contract` resta chiusa.
+- **Restano al proprietario:** il codice (lo vieta la richiesta stessa), i merge e le modifiche ai requisiti. Fra queste ultime c'è la domanda Q-17-1 sulle parti progettate ma non costruite nell'artifact.
+- **Stato:** registrato.
+
+### D-17-1: un giro di verifica oltre il tetto
+
+- **Chi ha deciso:** il coordinatore, nel ruolo di Domenico.
+- **Situazione:** il terzo giro di revisione dell'emendamento si è chiuso con `NOT CONVERGED`, `0/1/4`, `COVERAGE: full`. L'unico rilievo importante erano quattro funzioni previste in `ux-ponte.md` e mai costruite, che sono state aggiunte a Q-17-1. Il tetto di tre giri era stato raggiunto.
+- **Decisione:** un giro di verifica limitato alle correzioni del terzo giro, perché per approvare la spec serve un verdetto.
+- **Esito:** `VERDICT: CONVERGED`, `FINDINGS: 0/0/3`, `COVERAGE: full`. I tre minori sono stati corretti subito.
+- **I cinque costi:**
+  - token: pochi;
+  - tempo: circa 6 minuti;
+  - qualità: c'è un verdetto, invece di un'approvazione su un giro chiuso NOT CONVERGED;
+  - modo di lavorare: lo stesso schema della D-14-6;
+  - giocatore: nessun effetto.
+- **Stato:** in attesa di conferma.
+
+### D-17-2: approvazione dell'emendamento 1 (apertura `spec`)
+
+- **Chi ha deciso:** la trinità. Il coordinatore ha fatto da Domenico, e il giudizio sulle prove viene dal revisore avversariale, un agente indipendente con mandato ostile. Riccardo non è entrato: l'emendamento non progetta interfacce nuove, ma riporta quelle dell'artifact.
+- **Apertura usata:** `spec`, della finestra D-17-0.
+- **Il ciclo:**
+  - giro 1: `VERDICT: NOT CONVERGED`, `FINDINGS: 1/10/9`, `COVERAGE: partial`;
+  - giro 2: `VERDICT: NOT CONVERGED`, `FINDINGS: 0/3/4`, `COVERAGE: partial`;
+  - giro 3: `VERDICT: NOT CONVERGED`, `FINDINGS: 0/1/4`, `COVERAGE: full`;
+  - giro di verifica (D-17-1), che chiude il ciclo: `VERDICT: CONVERGED`, `FINDINGS: 0/0/3`, `COVERAGE: full`. I tre minori sono stati corretti subito dopo.
+- **Cosa è stato approvato:** `specs/20261113-111328-v1-port/amendment-2026-11-17.md`, con le voci da AM-01 a AM-18. Sono applicate a `spec.md`, e tutte le citazioni ora puntano al riferimento del 17 novembre.
+- **Correzioni principali rispetto al passaggio del proprietario:**
+  - l'asset dello stile arriva nel WI-2, non nel WI-5;
+  - il tetto di dimensione passa a 1.700.000 byte;
+  - il banco golden esegue anche STYLE;
+  - la chiave del ruolo resta `role`;
+  - i tipi di chiamata della Venture entrano subito nell'enum, prima del congelamento;
+  - nuovo tipo `archive-generate`;
+  - gli id `f_` del pacchetto futuro contano come id del codice vecchio;
+  - nuove tabelle `records` e `missions`;
+  - il WI-7 si colloca tra il WI-4 e il WI-5.
+- **I cinque costi:**
+  - token: circa 6 punti della settimana per lettura, progetto e revisione;
+  - tempo: circa due ore;
+  - qualità: 4 giri e oltre 50 rilievi corretti prima di scrivere codice;
+  - modo di lavorare: lo stesso schema del 14 novembre;
+  - giocatore: tutto ciò che l'artifact fa il 17 novembre ha un posto nella v1.
+- **Restano al proprietario:**
+  - Q-17-1: le parti progettate ma non costruite nell'artifact;
+  - Q-17-2: la pubblicazione delle 45 schede nuove;
+  - le aggiunte al contratto API (sezione 2.9).
+- **Stato:** approvata in via provvisoria, in attesa di conferma.
