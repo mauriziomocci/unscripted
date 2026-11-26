@@ -319,3 +319,17 @@ export declare const passThroughGovernor: BudgetGovernor;
 export declare function extractJson(text: string): { ok: true; value: unknown } | { ok: false };
 export declare function toJsonSchema(schema: unknown /* a zod schema */): JsonSchema;
 export declare const migrations: { readonly character: readonly ((record: unknown) => unknown)[] };
+
+// ---------- Typed errors and helpers the apps decide by (T100) ----------
+// A caller decides by the class of an error, never by its message, so the classes the planners throw are public.
+
+export declare class CharacterNotFoundError extends Error { readonly id: string; }
+export declare class VersionNotFoundError extends Error { readonly id: string; readonly version: number; }
+export declare class ArchiveRequestError extends Error { readonly code: 'id_mismatch' | 'symmetric_in_place'; }
+export declare class InvalidArchiveFileError extends Error {}
+export declare class NormaliseError extends Error { readonly code: 'name_required'; }
+export declare class UnsupportedSchemaVersionError extends Error {}
+export declare function migrateCharacter(record: unknown, chain?: readonly ((record: unknown) => unknown)[]): unknown;
+export declare const GameEventSchema: unknown;     // zod, the base GameEvent schema (FR-012)
+/** The shared-queue fallback of P-01a (FR-053): a decorator over any LlmClient; the scheduler paces its waits. */
+export declare function withSharedQueue(inner: LlmClient, scheduler: Scheduler): LlmClient;
