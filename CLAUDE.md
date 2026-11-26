@@ -33,25 +33,35 @@ pnpm --filter @unscripted/artifact build   # single-file Claude artifact
 
 **Workspaces**:
 - `packages/core` — the game engine. Pure TypeScript, no DOM, no Node APIs. Characters and archive model, island simulation, talk show, prompts, reports. Every environment lives here.
-- `apps/web` — React front end. Rendering, input, panels. No game rules.
+- `packages/ui` — every screen of both forms (React). No game rules; it renders core's state.
+- `apps/web` — the web form: composes the adapters (LLM client, stores, speech, downloads) and mounts `packages/ui`. No game rules.
 - `apps/server` — Fastify back end: LLM proxy (Anthropic, LM Studio), model listing, persistence in PostgreSQL. Holds secrets; the browser never sees an API key.
-- `apps/artifact` — builds the single self-contained HTML page published as a claude.ai artifact, from the same `packages/core`.
+- `apps/artifact` — builds the single self-contained HTML page published as a claude.ai artifact, from the same `packages/core` and `packages/ui`; until WI-6 it also rebuilds the vendored legacy page byte for byte.
+- `tools/golden` — golden characterization tests of the legacy sources, recorded before legacy code moves into core.
 
 **LLM access** goes through one interface in core:
 
 ```ts
 interface LlmClient {
   complete(request: {
-    prompt: string;
+    kind: LlmCallKind;          // the legacy call kind, persisted in the game stats (FR-011)
     tier: 'main' | 'light';     // main = character lines and decisions, light = listening, chorus, twists
+    lowLatency?: boolean;       // only with tier 'main': the quick main model (P-01a)
+    attempt?: number;           // 0 on the first try; core alone counts retries (S-08)
+    prompt: string;
+    schema?: JsonSchema;
     maxTokens?: number;
-  }): Promise<string>;
+    gameId?: string;
+    signal?: AbortSignal;
+  }): Promise<{ value: unknown; usage?: { inputTokens?: number; outputTokens?: number } }>;
 }
 ```
 
+The request names a kind and a tier, never a model. Failures are thrown as `LlmError` with a closed `code`. The full signatures are in `specs/20261126-130502-wi1-foundation/contracts/core-ports.d.ts`.
+
 Implementations: `HttpLlmClient` (web app, calls `apps/server`), `ArtifactLlmClient` (artifact, calls the artifact runtime's `sample` capability). Providers on the server: `anthropic`, `lmstudio` (OpenAI-compatible, `LMSTUDIO_BASE_URL`, default `http://host.docker.internal:1234/v1`). Model names come from configuration or from the provider's model list, never hard-coded in core.
 
-**Storage** goes through one interface in core (`Store`): server-backed (PostgreSQL) in the web app, IndexedDB in the artifact. Both persist the same data model: versioned characters, games, an append-only event log, periodic state snapshots, reports and LLM call records.
+**Storage** goes through the core ports `CharacterStore`, `ArchiveClient` and `GameStore` (together, `Store`): server-backed (PostgreSQL) in the web app, IndexedDB in the artifact. The other ports are `Clock`, `Scheduler`, `Rng` and the optional `Speech` and `Downloads`; `packages/ui` adds an optional UI-level `Sound`. Both persist the same data model: versioned characters, games, an append-only event log, periodic state snapshots, reports and LLM call records.
 
 ---
 
