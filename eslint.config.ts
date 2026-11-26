@@ -1,4 +1,6 @@
+import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript';
 import boundaries from 'eslint-plugin-boundaries';
+import { importX } from 'eslint-plugin-import-x';
 import { defineConfig } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 
@@ -28,6 +30,18 @@ export default defineConfig(
         tsconfigRootDir: import.meta.dirname,
       },
     },
+  },
+  {
+    // A cycle is a runtime problem; import-x ignores type-only imports (A-02).
+    files: ['**/*.{ts,tsx}'],
+    plugins: { 'import-x': importX },
+    settings: {
+      'import-x/resolver-next': [createTypeScriptImportResolver()],
+      // Without these two, import-x only walks .js files and never sees a .ts cycle.
+      'import-x/extensions': ['.ts', '.tsx', '.js', '.mjs', '.cjs'],
+      'import-x/parsers': { '@typescript-eslint/parser': ['.ts', '.tsx'] },
+    },
+    rules: { 'import-x/no-cycle': 'error' },
   },
   {
     // Dependencies point one way: core <- ui <- apps, golden -> core (A-02).
