@@ -142,6 +142,16 @@ describe('generateCharacter retries (archfuturo.js:109-116)', () => {
     expect(requests.map(({ attempt }) => attempt)).toEqual([0, 1, 2, 3]);
   });
 
+  it('waits the time the server reported before the retry', async () => {
+    const limited = new LlmError('rate_limited', 'slow down', { retryAfterMs: 1234 });
+    const { client } = scriptedClient([limited, { value: { scheda: sheet() } }]);
+    const { deps: generatorDeps, waits } = deps();
+    await generateCharacter(client, OPTIONS, [], generatorDeps);
+    expect(waits).toEqual([1234]);
+  });
+});
+
+describe('generateCharacter, after a rate limit (archfuturo.js:109-116)', () => {
   it('succeeds after a rate limit', async () => {
     const { client } = scriptedClient([rateLimited(), { value: { scheda: sheet() } }]);
     const { deps: generatorDeps, waits } = deps();

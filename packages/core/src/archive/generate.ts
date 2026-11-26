@@ -1,9 +1,8 @@
-import { BACKOFF_SCHEDULES, backoffWaitMs, mayRetry } from '../llm/backoff';
-import { LlmError } from '../llm/errors';
-import type { LlmClient, LlmResult } from '../llm/request';
+import { BACKOFF_SCHEDULES } from '../llm/backoff';
+import type { LlmClient } from '../llm/request';
+import { callWithRetries } from '../llm/retry';
 import { TEXT as GENERATOR_TEMPLATE } from '../prompts/it/archive-generate';
 import type { Scheduler } from '../time/ports';
-import { pause } from '../time/pause';
 import type { Character, CharacterInput } from './character';
 import type { ArchiveDeps } from './deps';
 import { archEra } from './era';
@@ -129,24 +128,6 @@ export interface GeneratorDeps extends ArchiveDeps {
   readonly scheduler: Scheduler;
 }
 
-/** One logical call: a rate limit is retried on the `archiveGenerate` schedule, any other error reaches the caller (`archfuturo.js:109-116`). */
-async function askWithRetries(
-  llm: LlmClient,
-  prompt: string,
-  scheduler: Scheduler,
-): Promise<LlmResult> {
-  const schedule = BACKOFF_SCHEDULES.archiveGenerate;
-  for (let attempt = 0; ; attempt += 1) {
-    try {
-      return await llm.complete({ kind: 'archive-generate', tier: 'main', prompt, attempt });
-    } catch (error) {
-      const retryable = error instanceof LlmError && error.code === 'rate_limited';
-      if (!retryable || !mayRetry(schedule, attempt)) throw error;
-      await pause(scheduler, backoffWaitMs(schedule, attempt + 1));
-    }
-  }
-}
-
 const PREVIEW_ID = 'preview';
 
 /** Links the sheet's relations by name to the characters that exist, as the legacy does before the editor opens (`archfuturo.js:148`). */
@@ -169,7 +150,10 @@ export async function generateCharacter(
   deps: GeneratorDeps,
 ): Promise<GeneratedCharacter> {
   const prompt = buildGeneratorPrompt(options, crew);
-  const { value } = await askWithRetries(llm, prompt, deps.scheduler);
+  const { value } = await callWithRetries(
+    (attempt) => llm.complete({ kind: 'archive-generate', tier: 'main', prompt, attempt }),
+    { schedule: BACKOFF_SCHEDULES.archiveGenerate, scheduler: deps.scheduler },
+  );
   const generated = parseGeneratedCharacter(value, options.role, deps.clock);
   return 'character' in generated
     ? { character: withLinksResolved(generated.character, crew) }
