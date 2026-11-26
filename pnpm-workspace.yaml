@@ -36,28 +36,28 @@ catalog:
   prettier: 3.10.1
   jscpd: 5.4.3
   vitest: 5.1.0
-  "@vitest/coverage-v8": 5.1.0
+  '@vitest/coverage-v8': 5.1.0
   zod: ~4.6.7
   fastify: 5.12.8
-  "@fastify/type-provider-typebox": 6.3.0
+  '@fastify/type-provider-typebox': 6.3.0
   typebox: 1.4.7
-  "@fastify/swagger": 9.9.3
+  '@fastify/swagger': 9.9.3
   drizzle-orm: 0.45.4
   drizzle-kit: 0.31.11
   pg: 8.23.1
-  "@types/pg": 8.23.1
-  "@anthropic-ai/sdk": 1.8.0
+  '@types/pg': 8.23.1
+  '@anthropic-ai/sdk': 1.8.0
   uuid: 14.0.3
   react: 19.3.1
   react-dom: 19.3.1
   vite: 8.3.8
-  "@vitejs/plugin-react": 6.3.0
+  '@vitejs/plugin-react': 6.3.0
   tsx: 4.23.15
   jsdom: 31.0.0
-  "@testing-library/react": 16.3.3
+  '@testing-library/react': 16.3.3
   fake-indexeddb: 6.2.8
-  "@playwright/test": 1.65.0
+  '@playwright/test': 1.65.0
   axe-core: 4.14.0
-  "@axe-core/playwright": 4.14.0
+  '@axe-core/playwright': 4.14.0
   acorn: 8.19.0
-  "@types/node": 22.20.5
+  '@types/node': 22.20.5

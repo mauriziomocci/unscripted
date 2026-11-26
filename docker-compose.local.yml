@@ -14,7 +14,7 @@ services:
       - db-data:/var/lib/postgresql/data
       - ./compose/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U unscripted -d unscripted"]
+      test: ['CMD-SHELL', 'pg_isready -U unscripted -d unscripted']
       interval: 5s
       timeout: 3s
       retries: 10
@@ -26,7 +26,7 @@ services:
     volumes:
       - .:/app
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - 'host.docker.internal:host-gateway'
     env_file:
       - path: .envs/.local/server.env
         required: false

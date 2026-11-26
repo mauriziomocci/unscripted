@@ -1,0 +1,9 @@
+apps/artifact/legacy/
+apps/server/drizzle/
+**/dist/
+coverage/
+pnpm-lock.yaml
+specs/
+docs/
+.specify/
+.claude/
