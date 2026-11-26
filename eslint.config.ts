@@ -116,15 +116,24 @@ export default defineConfig(
           message: 'packages/core is pure: use the Clock, Scheduler or Rng port.',
         })),
       ],
+      // Property access covers Math['random'], destructuring and the globalThis route.
+      'no-restricted-properties': [
+        'error',
+        { object: 'Math', property: 'random', message: 'Use the Rng port.' },
+        { object: 'Date', property: 'now', message: 'Use the Clock port.' },
+        ...['Date', 'Math', 'performance', 'crypto', 'setTimeout', 'setInterval'].map(
+          (property) => ({
+            object: 'globalThis',
+            property,
+            message: 'packages/core is pure: reach time and randomness through the ports.',
+          }),
+        ),
+      ],
       'no-restricted-syntax': [
         'error',
         {
-          selector: "CallExpression[callee.object.name='Math'][callee.property.name='random']",
-          message: 'Math.random() is forbidden in core: use the Rng port.',
-        },
-        {
-          selector: "CallExpression[callee.object.name='Date'][callee.property.name='now']",
-          message: 'Date.now() is forbidden in core: use the Clock port.',
+          selector: "CallExpression[callee.name='Date']",
+          message: 'Date() returns the current time: use the Clock port.',
         },
         {
           selector: "NewExpression[callee.name='Date'][arguments.length=0]",
@@ -195,6 +204,7 @@ export default defineConfig(
       complexity: ['error', 10],
       'max-nested-callbacks': ['error', 3],
       'no-empty': 'error',
+      'no-unsafe-finally': 'error',
       '@typescript-eslint/no-floating-promises': 'error',
     },
   },

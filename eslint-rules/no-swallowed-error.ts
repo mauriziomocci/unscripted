@@ -43,6 +43,10 @@ function methodName(callee: Rule.Node): string | undefined {
  * rethrow, a `.catch(reference)` whose body cannot be checked, and a
  * two-argument `.then(ok, onRejected)`. A site that maps an error to a typed
  * result is allowed only with a written `taste-exempt:` reason.
+ *
+ * Limit: any reachable `throw` counts, so `if (flag) throw e; return null;`
+ * passes. The rule catches handlers that never rethrow, not conditional
+ * rethrows; review covers those.
  */
 const rule: Rule.RuleModule = {
   meta: {
