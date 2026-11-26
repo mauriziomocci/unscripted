@@ -229,7 +229,7 @@ export interface ArchivePlanners {
   planDelete(current: readonly StoredCharacter[], id: string, deps: ArchiveDeps): CharacterBatch;
   planPack(current: readonly StoredCharacter[], packs: readonly (readonly Character[])[], deps: ArchiveDeps): CharacterBatch;
   /** `file` is `unknown`: the planner validates it (archivio/1, no prototype key, every character) and throws InvalidArchiveFileError; a bad file plans nothing. */
-  planImport(current: readonly StoredCharacter[], file: unknown, deps: ArchiveDeps): CharacterBatch;
+  planImport(current: readonly StoredCharacter[], file: unknown, deps: ArchiveDeps): { readonly batch: CharacterBatch; /** Characters skipped by the legacy rule (archui.js:249), for the import note: no caller re-parses the file. */ readonly skipped: number };
 }
 
 /** The «✨ Genera» archive generator (FR-072, research R-25). Rules in core; labels in the UI locales (review N9). */
@@ -255,11 +255,14 @@ export declare function stylesForRole(crew: readonly Character[], role: string):
 /** archParse and archToMarkdown ported (FR-014); Italian messages verbatim.
  *  The clock dates the origin label «importato da <file> · dd/mm» (archui.js:62). */
 export declare function parseCharacterFile(text: string, fileName: string, clock: Clock): ParsedCharacterFile;
-/** A refusal carries only the message (archui.js:82); a sheet is an editor preview, a CharacterInput without id, version, revision or updated.
- *  `archive` is set when a JSON file is an `{ chars }` archive (archui.js:58): the import route takes it. */
+/** What reading a file gives (archui.js:54-84). `error`: a refusal, with the legacy message and nothing else (archui.js:82).
+ *  `character`: an editor preview, a CharacterInput without id, version, revision or updated, with the counts of the note
+ *  «N sezioni riconosciute, M finite in «Altro»» (archui.js:251). `archive`: a JSON file with a `chars` list (archui.js:58),
+ *  returned untouched for planImport, which validates it. */
 export type ParsedCharacterFile =
-  | { readonly error: string }
-  | { readonly character: CharacterInput; readonly recognisedSections: number; readonly otherSections: number; readonly archive?: unknown };
+  | { readonly kind: 'error'; readonly error: string }
+  | { readonly kind: 'character'; readonly input: CharacterInput; readonly recognisedSections: number; readonly otherSections: number }
+  | { readonly kind: 'archive'; readonly file: unknown };
 /** `nameOf` is the legacy archGet (archui.js:133): it names a relation target, and must resolve LIVE characters only; a relation it cannot name is left out. */
 export declare function characterToMarkdown(character: CharacterInput, options: { withSecrets: boolean; nameOf: (id: string) => string | undefined }): string;
 export declare const LEGACY_ID_NAMESPACE: string;
