@@ -179,3 +179,109 @@ describe('planImport, pending relations (archui.js:249)', () => {
     });
   });
 });
+
+/** An inline history row as a raw dump of the legacy writes it (`archui.js:37`). */
+const row = (v: unknown, changes: Record<string, unknown> = {}): Record<string, unknown> => ({
+  v,
+  at: `2026-11-1${String(v)}T10:00:00.000Z`,
+  why: `motivo ${String(v)}`,
+  data: incoming('c_a1', { version: v, name: `Versione ${String(v)}` }),
+  ...changes,
+});
+
+/** The history a first save of `c_a1` at `version` carries after the import. */
+function inlineVersionsOf(versions: unknown[], version = 5) {
+  const [write] = planImport([], archive([incoming('c_a1', { version, versions })]), makeDeps());
+  return write?.kind === 'versionedSave' ? write.inlineVersions : undefined;
+}
+
+describe('planImport, inline versions of a new character (edge cases, data-model)', () => {
+  it('turns them into history rows that keep the reason and the date, with the ids mapped', () => {
+    const data = incoming('c_a1', {
+      version: 1,
+      relations: [{ to: 'c_a2', type: 'amici', int: 1, view: '' }],
+    });
+    const rows = inlineVersionsOf([row(1, { data }), row(2)]);
+    expect(rows).toHaveLength(2);
+    expect(rows?.[0]).toMatchObject({
+      version: 1,
+      at: '2026-11-11T10:00:00.000Z',
+      reason: 'motivo 1',
+      data: { id: idOf('c_a1'), legacyId: 'c_a1', version: 1, relations: [{ to: idOf('c_a2') }] },
+    });
+    expect(rows?.[0]?.data).not.toHaveProperty('revision');
+    expect(rows?.[0]?.data).not.toHaveProperty('versions');
+  });
+
+  it('keeps a missing date or reason as null', () => {
+    const rows = inlineVersionsOf([{ v: 1, data: incoming('c_a1', { version: 1 }) }]);
+    expect(rows).toMatchObject([{ version: 1, at: null, reason: null }]);
+  });
+});
+
+describe('planImport, which inline versions are kept', () => {
+  it.each([[0], [5], [6], [1.5], ['2'], [null], [undefined]])(
+    'drops a row whose v is %j: not an integer in 1 to version - 1',
+    (v) => {
+      expect(inlineVersionsOf([row(1), row(v)])?.map((r) => r.version)).toEqual([1]);
+    },
+  );
+
+  it('keeps one row per v, the last occurrence, in array order', () => {
+    const rows = inlineVersionsOf([
+      row(2, { why: 'prima' }),
+      row(1),
+      row(2, { why: 'ultima' }),
+      row(3),
+    ]);
+    expect(rows?.map((r) => [r.version, r.reason])).toEqual([
+      [1, 'motivo 1'],
+      [2, 'ultima'],
+      [3, 'motivo 3'],
+    ]);
+  });
+
+  it('keeps the last 15 rows in array order', () => {
+    const many = Array.from({ length: 20 }, (_, i) => row(i + 1, { at: null }));
+    const rows = inlineVersionsOf(many, 25);
+    expect(rows?.map((r) => r.version)).toEqual(Array.from({ length: 15 }, (_, i) => i + 6));
+  });
+
+  it('gives a first save with version 1 no rows', () => {
+    expect(inlineVersionsOf([row(1)], 1)).toBeUndefined();
+  });
+
+  it.each([
+    ['rows that are not a list', 'text'],
+    ['a row that is not an object', ['text']],
+    ['a row whose data is not a valid character', [{ v: 1, data: { name: 5 } }]],
+  ])('refuses a file with %s', (_case, versions) => {
+    const file = archive([incoming('c_a1', { versions })]);
+    expect(() => planImport([], file, makeDeps())).toThrow(InvalidArchiveFileError);
+  });
+});
+
+describe('planImport, inline versions and deleted rows', () => {
+  it('discards the inline versions of a character that replaces a stored one', () => {
+    const file = archive([incoming('c_a1', { versions: [row(1)] })]);
+    const [write] = planImport([stored(stale)], file, makeDeps());
+    expect(write).toMatchObject({ reason: 'import archivio' });
+    expect(write).not.toHaveProperty('inlineVersions');
+  });
+
+  it('revives a deleted row as a versioned save with the reason «import archivio», keeping its id', () => {
+    const archived = makeCharacter({ id: idOf('c_a1'), version: 4, revision: 6 });
+    const file = archive([
+      incoming('c_a1', { versions: [row(1)], updated: '2020-01-01T00:00:00.000Z' }),
+    ]);
+    const [write, ...rest] = planImport([stored(archived, true)], file, makeDeps());
+    expect(rest).toEqual([]);
+    expect(write).toMatchObject({
+      kind: 'versionedSave',
+      expectedRevision: 6,
+      reason: 'import archivio',
+      character: { id: archived.id, version: 4, revision: 6, updated: NOW_ISO },
+    });
+    expect(write).not.toHaveProperty('inlineVersions');
+  });
+});
