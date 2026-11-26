@@ -22,11 +22,13 @@ export default defineConfig(
   {
     ignores: [
       'apps/artifact/legacy/**',
-      '**/dist/**',
       'apps/server/drizzle/**',
+      // Build output (git-ignored): the root tooling build and one per workspace.
+      'dist/**',
+      '{apps,packages,tools}/*/dist/**',
       'coverage/**',
       // Inputs of the checkers' own tests: they contain violations on purpose.
-      '**/fixtures/**',
+      'scripts/test/fixtures/**',
       // Contract drafts of the specs, not product code.
       'specs/**',
     ],

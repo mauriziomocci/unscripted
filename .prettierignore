@@ -1,10 +1,8 @@
 apps/artifact/legacy/
 apps/server/drizzle/
-**/dist/
-coverage/
+scripts/test/fixtures/
 pnpm-lock.yaml
 specs/
 docs/
 .specify/
 .claude/
-**/fixtures/

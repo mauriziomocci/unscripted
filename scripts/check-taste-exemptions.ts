@@ -1,5 +1,6 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /** One exemption of the taste gate that carries no written reason. */
@@ -11,16 +12,15 @@ export interface Violation {
   message: string;
 }
 
-/** Folders never scanned: vendored or generated code, and the checker's own fixtures. */
-const SKIPPED_DIRECTORIES = new Set([
-  '.git',
-  'node_modules',
-  'dist',
-  'coverage',
-  'legacy',
-  'drizzle',
-  'fixtures',
-]);
+/**
+ * Paths never scanned, exact prefixes relative to the repository root: the
+ * vendored reference code, generated migrations and the checker's own fixtures.
+ */
+const EXCLUDED_PREFIXES = [
+  'apps/artifact/legacy/',
+  'apps/server/drizzle/',
+  'scripts/test/fixtures/',
+];
 
 const ESLINT_DISABLE = /(?:\/\/|\/\*)\s*eslint-disable(?:-next-line|-line)?\b/;
 const JSCPD_IGNORE = /(?:\/\/|\/\*)\s*jscpd:ignore-start/;
@@ -32,26 +32,35 @@ function violationInLine(line: string): string | undefined {
   return JSCPD_IGNORE.test(line) ? 'jscpd ignore without "taste-exempt: <reason>"' : undefined;
 }
 
-function typeScriptFiles(directory: string): string[] {
-  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(directory, entry.name);
-    if (entry.isDirectory())
-      return SKIPPED_DIRECTORIES.has(entry.name) ? [] : typeScriptFiles(path);
-    return /\.(?:tsx?|[cm]?js)$/.test(entry.name) ? [path] : [];
-  });
+/** Files git tracks or would track (so .gitignore applies), relative to `root`. */
+function sourceFiles(root: string): string[] {
+  const listed = execFileSync(
+    'git',
+    ['ls-files', '--cached', '--others', '--exclude-standard', '-z'],
+    {
+      cwd: root,
+      encoding: 'utf8',
+    },
+  );
+  return listed
+    .split('\0')
+    .sort()
+    .filter((file) => /\.(?:tsx?|[cm]?js)$/.test(file))
+    .filter((file) => !EXCLUDED_PREFIXES.some((prefix) => file.startsWith(prefix)))
+    .filter((file) => existsSync(join(root, file)));
 }
 
 /**
  * Lists every exemption of the taste gate under `root` that lacks a written
- * reason. Vendored folders (`legacy`, `drizzle`) and `fixtures` are skipped.
+ * reason. Ignored files and the exact paths of EXCLUDED_PREFIXES are skipped.
  */
 export function findUnjustifiedExemptions(root: string): Violation[] {
-  return typeScriptFiles(root).flatMap((path) =>
-    readFileSync(path, 'utf8')
+  return sourceFiles(root).flatMap((file) =>
+    readFileSync(join(root, file), 'utf8')
       .split('\n')
       .flatMap((text, index) => {
         const message = violationInLine(text);
-        return message ? [{ file: relative(root, path), line: index + 1, message }] : [];
+        return message ? [{ file, line: index + 1, message }] : [];
       }),
   );
 }

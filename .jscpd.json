@@ -1,12 +1,9 @@
 {
   "pattern": "**/*.{ts,tsx,js,mjs,cjs}",
   "ignore": [
-    "**/node_modules/**",
-    "**/dist/**",
-    "**/coverage/**",
-    "**/legacy/**",
-    "**/drizzle/**",
-    "**/fixtures/**",
+    "apps/artifact/legacy/**",
+    "apps/server/drizzle/**",
+    "scripts/test/fixtures/**",
     "specs/**"
   ],
   "minLines": 11,
