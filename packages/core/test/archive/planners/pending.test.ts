@@ -12,7 +12,7 @@ const firstSave = (character: ReturnType<typeof makeCharacter>): CharacterBatch 
 ];
 
 describe('withPendingResolved (archui.js:85-88)', () => {
-  it('leaves a relation pending while no character has that name', () => {
+  it('writes nothing for a holder whose relation stays pending, in the default mode (pack, import)', () => {
     const batch = firstSave(makeCharacter({ name: 'Carlo' }));
     expect(withPendingResolved([stored(holder)], batch, NOW_ISO)).toEqual(batch);
   });
@@ -112,5 +112,22 @@ describe('withPendingResolved, self and targets', () => {
       NOW_ISO,
     );
     expect(update).toMatchObject({ character: { relations: [{ to: first.id }] } });
+  });
+});
+
+describe('withPendingResolved, the editor save (P-03, archui.js:307)', () => {
+  it('touches every holder with pending relations, resolved or not, refreshing its updated', () => {
+    const batch = firstSave(makeCharacter({ name: 'Carlo' }));
+    const result = withPendingResolved([stored(holder)], batch, NOW_ISO, true);
+    expect(result).toEqual([
+      ...batch,
+      { kind: 'inPlaceUpdate', expectedRevision: 4, character: { ...holder, updated: NOW_ISO } },
+    ]);
+  });
+
+  it('leaves characters without pending relations alone', () => {
+    const quiet = makeCharacter({ name: 'Quieto' });
+    const batch = firstSave(makeCharacter({ name: 'Carlo' }));
+    expect(withPendingResolved([stored(quiet)], batch, NOW_ISO, true)).toEqual(batch);
   });
 });

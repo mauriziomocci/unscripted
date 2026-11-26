@@ -1,6 +1,6 @@
 import type { Character } from '../character';
 import type { ArchiveWarning, CharacterWrite, StoredCharacter } from '../../store/characterStore';
-import { withPendingResolved } from './pending';
+import { charactersAfter, resolveOne, withPendingResolved } from './pending';
 import type { PlannedBatch } from './types';
 
 type Relation = NonNullable<Character['relations']>[number];
@@ -55,9 +55,12 @@ function symmetricWrites(
 }
 
 /**
- * Completes a versioned save the way the editor's save does: optionally the
- * reciprocal relations and their warnings, then the pending relations that the
- * save makes resolvable, all in one batch. `before` are the relations the
+ * Completes a versioned save in the order of the legacy editor save: the saved
+ * character's own pending relations are resolved first (`archui.js:251`), so the
+ * links are among its relations; then, optionally, the reciprocal relations and
+ * their warnings (`archui.js:306`), where the links just resolved count as
+ * existing before the save; then every other holder of pending relations is
+ * touched (`archui.js:307`). One batch. `before` are the relations the
  * character had before the edit, empty for a creation.
  */
 export function completeVersionedSave(
@@ -67,11 +70,16 @@ export function completeVersionedSave(
   symmetricRelations: boolean,
   stamp: string,
 ): PlannedBatch {
+  const resolved = resolveOne(save.character, charactersAfter(current, [save]));
+  const own = { ...save, character: resolved };
+  const ownLinks = (resolved.relations ?? []).filter(
+    (link) => !(save.character.relations ?? []).includes(link),
+  );
   const symmetric = symmetricRelations
-    ? symmetricWrites(current, save.character, before, stamp)
+    ? symmetricWrites(current, resolved, [...before, ...ownLinks], stamp)
     : { writes: [], warnings: [] };
   return {
-    batch: withPendingResolved(current, [save, ...symmetric.writes], stamp),
+    batch: withPendingResolved(current, [own, ...symmetric.writes], stamp, true),
     warnings: symmetric.warnings,
   };
 }

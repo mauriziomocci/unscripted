@@ -3,7 +3,10 @@ import { normName } from '../normName';
 import type { CharacterBatch, CharacterWrite, StoredCharacter } from '../../store/characterStore';
 
 /** The characters the archive holds once a batch is applied, in insertion order; archived rows are not in it. */
-function charactersAfter(current: readonly StoredCharacter[], batch: CharacterBatch): Character[] {
+export function charactersAfter(
+  current: readonly StoredCharacter[],
+  batch: CharacterBatch,
+): Character[] {
   const byId = new Map<string, Character>();
   for (const { character, archived } of current) if (!archived) byId.set(character.id, character);
   for (const write of batch) {
@@ -40,7 +43,7 @@ function newLinks(character: Character, everyone: readonly Character[]): Relatio
  * whose name matches anyone is dropped, the holder itself included, and the
  * others stay pending. Returns the same object when nothing changes.
  */
-function resolveOne(character: Character, everyone: readonly Character[]): Character {
+export function resolveOne(character: Character, everyone: readonly Character[]): Character {
   const pending = character.pendingRelations ?? [];
   const links = newLinks(character, everyone);
   const remaining = pending.filter(({ name }) => !holderOf(name, everyone));
@@ -70,18 +73,22 @@ function withResolvedCharacter(
  * carries the revision it was read at. `stamp` is the `updated` of those
  * updates, as the legacy save gives them; `null` keeps each holder's own, which
  * is what an import does because the legacy resolves there without saving
- * (`archui.js:249`).
+ * (`archui.js:249`). With `touchAllHolders`, which the editor's save uses
+ * (P-03, `archui.js:307`), every holder of pending relations is written, even
+ * when none resolves, so its `updated` is refreshed as the legacy save does.
  */
 export function withPendingResolved(
   current: readonly StoredCharacter[],
   batch: CharacterBatch,
   stamp: string | null,
+  touchAllHolders = false,
 ): CharacterBatch {
   const everyone = charactersAfter(current, batch);
   const resolved = new Map<string, Character>();
   for (const character of everyone) {
     const after = resolveOne(character, everyone);
-    if (after !== character) resolved.set(character.id, after);
+    const touched = touchAllHolders && (character.pendingRelations ?? []).length > 0;
+    if (after !== character || touched) resolved.set(character.id, after);
   }
   const written = new Set(
     batch.flatMap((write) => (write.kind === 'softDelete' ? [] : [write.character.id])),

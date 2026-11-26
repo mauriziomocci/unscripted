@@ -193,3 +193,19 @@ describe('planEdit, the relation_mismatch warning (archui.js:304-306)', () => {
     expect(attempt).toThrow(expect.objectContaining({ code: 'symmetric_in_place' }));
   });
 });
+
+describe('planEdit, the other holders of pending relations (P-03, archui.js:307)', () => {
+  it('stamps the updated of a character whose pending relation stays unresolved', () => {
+    const hal = makeCharacter({
+      revision: 2,
+      pendingRelations: [{ name: 'Nessuno', type: 'amici', int: 0, view: '' }],
+    });
+    const { batch } = edit({}, 'versioned', [stored(hal)]);
+    expect(batch).toHaveLength(2);
+    expect(batch[1]).toEqual({
+      kind: 'inPlaceUpdate',
+      expectedRevision: 2,
+      character: { ...hal, updated: NOW_ISO },
+    });
+  });
+});

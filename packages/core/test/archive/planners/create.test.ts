@@ -139,3 +139,29 @@ describe('planCreate, symmetric relations (archui.js:304)', () => {
     ]);
   });
 });
+
+describe('planCreate, a sheet read from a file (archui.js:250-251, 306)', () => {
+  it('links the people its Rapporti name, and the symmetric save links them back without a warning', () => {
+    const bea = makeCharacter({ name: 'Bea', revision: 3 });
+    const sent = input({
+      name: 'Ugo',
+      pendingRelations: [{ name: 'Bea', type: 'amici', int: 2, view: 'bella' }],
+    });
+    const { batch, warnings } = planCreate([stored(bea)], sent, makeDeps(), {
+      symmetricRelations: true,
+    });
+    expect(warnings).toEqual([]);
+    expect(batch).toHaveLength(2);
+    expect(batch[0]).toMatchObject({
+      character: {
+        relations: [{ to: bea.id, type: 'amici', int: 2, view: 'bella' }],
+        pendingRelations: [],
+      },
+    });
+    expect(batch[1]).toMatchObject({
+      kind: 'inPlaceUpdate',
+      expectedRevision: 3,
+      character: { id: bea.id, relations: [{ to: 'new-1', type: 'amici', int: 2, view: '' }] },
+    });
+  });
+});
