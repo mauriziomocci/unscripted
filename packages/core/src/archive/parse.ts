@@ -1,5 +1,6 @@
-import type { CharacterInput } from './character';
+import { type CharacterInput, CharacterInputSchema } from './character';
 import { blankCharacterInput } from './blank';
+import { omitKeys } from './planners/input';
 import { archRoleKey } from './roles';
 import { TEXT_SECTION_KEYS } from './sections';
 
@@ -12,6 +13,11 @@ export interface ParsedCharacterFile {
   /** Whether some heading was not recognised and its text went to «Altro». */
   readonly toOther: boolean;
   readonly error?: string;
+  /**
+   * Set when the file is an archive (`{ chars: [...] }`, `archui.js:57`): the
+   * parsed JSON, untouched, for the import route. `character` is then blank.
+   */
+  readonly archive?: unknown;
 }
 
 /**
@@ -56,6 +62,20 @@ const MAX_SECTION_LENGTH = 20_000;
 const MAX_LIST_ITEMS = 12;
 /** The legacy message, verbatim (`archui.js:82`). */
 const FILE_TOO_LONG_MESSAGE = 'Il file è troppo lungo (oltre 200.000 caratteri).';
+/** The legacy JSON messages, verbatim (`archui.js:57-59`). A record the schema refuses and a prototype key share the first: the legacy had neither check. */
+const INVALID_JSON_MESSAGE = 'Il file JSON non è valido.';
+const JSON_WITHOUT_NAME_MESSAGE = 'Il JSON non contiene un personaggio (manca "name").';
+/** What a JSON file may not set: the store owns identity and history, and the legacy overwrote both (`archui.js:58`); `updated` is the planners' (`archui.js:38`). */
+const JSON_DROPPED_KEYS: ReadonlySet<string> = new Set([
+  'id',
+  'legacyId',
+  'version',
+  'revision',
+  'versions',
+  'updated',
+]);
+/** A JSON text is recognised by its first character as well as by the file name (`archui.js:55`). */
+const JSON_TEXT = /^\s*\{/;
 
 const MIN_AGE = 3;
 const MAX_AGE = 95;
@@ -219,27 +239,63 @@ function completeDraft(state: ReaderState, fileName: string): void {
   if (!draft.short) draft.short = derivedShort(sections);
 }
 
+/** A result with no content: a blank sheet named after the file. */
+function emptyResult(fileName: string): ParsedCharacterFile {
+  const character = {
+    ...blankCharacterInput(),
+    name: fileNameWithoutExtension(fileName) || 'Senza nome',
+  };
+  return { character, recognisedSections: 0, toOther: false };
+}
+
+function refused(fileName: string, error: string): ParsedCharacterFile {
+  return { ...emptyResult(fileName), error };
+}
+
+/** Parses JSON text, or returns undefined when it is not JSON: a syntax error is the only failure `JSON.parse` has. */
+function tryParseJson(text: string): { value: unknown } | undefined {
+  try {
+    return { value: JSON.parse(text) as unknown };
+  } catch (error) {
+    if (error instanceof SyntaxError) return undefined;
+    throw error;
+  }
+}
+
+/**
+ * The JSON branch of `archParse` (`archui.js:55-60`): an archive goes back
+ * untouched, a record with a name becomes a sheet, anything else is refused
+ * with the legacy message. Unlike the legacy, the record is checked against
+ * the character schema and a prototype key is refused, because the file is
+ * untrusted. No size cap: the legacy checks it only after the Markdown branch
+ * (`archui.js:82`), and an archive is legitimately large.
+ */
+function parseJsonFile(text: string, fileName: string): ParsedCharacterFile {
+  const parsed = tryParseJson(text);
+  if (parsed === undefined) return refused(fileName, INVALID_JSON_MESSAGE);
+  const file = parsed.value as Record<string, unknown> | null;
+  if (file !== null && Array.isArray(file.chars))
+    return { ...emptyResult(fileName), archive: file };
+  if (!file?.name) return refused(fileName, JSON_WITHOUT_NAME_MESSAGE);
+  const checked = CharacterInputSchema.safeParse({
+    ...blankCharacterInput(),
+    ...omitKeys(file, JSON_DROPPED_KEYS),
+  });
+  if (!checked.success) return refused(fileName, INVALID_JSON_MESSAGE);
+  return { character: checked.data, recognisedSections: 0, toOther: false };
+}
+
 /**
  * Reads a Markdown or text character sheet (`archParse`, `archui.js:54-84`):
  * header lines (`Età: 35`), then `#` headings that name a section by its
  * synonyms, with the legacy order of precedence and messages. The result is a
  * preview for the editor; saving it goes through the create planner, which
- * gives it an id, a version and a date. A `.json` file is not read here: the
- * import planner takes `archivio/1` files and the editor takes one sheet.
+ * gives it an id, a version and a date. A `.json` file, or a text that starts
+ * with `{`, takes the JSON branch (`parseJsonFile`).
  */
 export function parseCharacterFile(text: string, fileName: string): ParsedCharacterFile {
-  if (text.length > MAX_FILE_LENGTH) {
-    const draft = {
-      ...blankCharacterInput(),
-      name: fileNameWithoutExtension(fileName) || 'Senza nome',
-    };
-    return {
-      character: draft,
-      recognisedSections: 0,
-      toOther: false,
-      error: FILE_TOO_LONG_MESSAGE,
-    };
-  }
+  if (/\.json$/i.test(fileName) || JSON_TEXT.test(text)) return parseJsonFile(text, fileName);
+  if (text.length > MAX_FILE_LENGTH) return refused(fileName, FILE_TOO_LONG_MESSAGE);
   const state: ReaderState = {
     draft: blankCharacterInput(),
     outline: [],
