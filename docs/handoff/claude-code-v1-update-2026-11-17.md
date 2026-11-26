@@ -50,7 +50,7 @@ See `build.py`.
 | `funui.js` | changed | `novelBook()`: the A5 book layout, extracted from the island's `writeNovel` and shared by every environment. **No characters page** |
 | `fun.js`, `env.js`, `talk.js` | changed | Story prompts use `NOVEL_STYLE`. The talk show offers only `presente` characters. Home card for the Venture, with «Ultima missione» and «Classifica» |
 | `ui.js` | changed | The island render loop skips frames while `window.__ventureActive` is set |
-| `tests/venture.test.js` | new | Engine tests with a scripted model: 15 checks, `ALL OK` |
+| `tests/venture.test.js` | new | Engine tests with a scripted model (mission to the end, value limits, no secret leaks, closed actions, determinism, all-calls-failing, director events, Command, agendas, landing party, bets, medals, trust): prints `ALL OK` |
 
 New localStorage keys:
 - `venture-game` (the whole game state)
