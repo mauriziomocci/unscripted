@@ -1,0 +1,519 @@
+# STATUS: DONE (approved provisionally, D-26-5)
+#
+# WI-1 HTTP contract (umbrella spec FR-020 to FR-031, FR-040 to FR-045, FR-063).
+# Contract with respect to the spec: exactly the 15 routes of FR-020, the envelope and codes of
+# FR-021, the request of FR-028; no new route, status or error code. Two fields go beyond the
+# spec's lists, both decided provisionally by the Trinity (D-26-4) and awaiting the owner's
+# confirmation (plan.md OI-4): `symmetricRelations` on the character writes (FR-016) and
+# `warnings` on their answers (FR-016, FR-072). Field names the spec describes but does not
+# spell are this plan's, reviewed in Riccardo mode (round 1); they freeze at the WI-1 merge.
+# This file is the design sketch; the binding artifact is the document @fastify/swagger
+# generates from the TypeBox schemas, compared with a committed snapshot (FR-063).
+openapi: 3.1.0
+info:
+  title: Unscripted server API (WI-1)
+  version: 1.0.0
+  description: >
+    Reached by the browser only through the web tier (Vite in local, nginx in production),
+    which adds the session token header. The server port is never published (FR-040).
+    Framework errors (malformed JSON, empty body, unsupported media type, prototype keys)
+    are answered with the same envelope as `invalid_request` (400); 415 is never sent,
+    because FR-021's list has no such code. Unknown keys are refused, never stripped: every
+    request option object is closed (additionalProperties false) and an unknown or misspelt
+    key is 400 invalid_request; only character records and archive files are open, because
+    FR-013 requires unknown record fields to pass through. Types are never coerced.
+servers:
+  - url: /api
+security:
+  - sessionToken: []
+components:
+  securitySchemes:
+    sessionToken:
+      type: apiKey
+      in: header
+      name: X-Unscripted-Token
+      description: Added by the web tier, never seen by the browser (FR-041). Missing or wrong gives 401 unauthorized.
+  headers:
+    RetryAfter:
+      description: Seconds to wait, set as S-08 says. Present on every 429 rate_limited, never on 429 budget (FR-021, FR-045).
+      schema: { type: integer, minimum: 1 }
+  schemas:
+    ErrorCode:
+      type: string
+      description: Closed list, one HTTP status each (FR-021). Callers decide by code, never by message (P-02).
+      enum: [invalid_request, unauthorized, forbidden_origin, not_found, conflict, payload_too_large,
+             rate_limited, budget, internal, unparseable, denied, model_refused, unavailable, timeout]
+    ErrorEnvelope:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message]
+          properties:
+            code: { $ref: '#/components/schemas/ErrorCode' }
+            message:
+              type: string
+              description: >
+                Diagnostic text in English for developers and logs. The web app never shows it:
+                it shows its own i18n text, chosen by `code` and by the action the player took
+                (P-02, FR-074).
+    LlmCallKind:
+      type: string
+      description: >
+        Names the call site for the consumption counters and the llm_calls record; it never
+        changes the model. Generated from core LLM_CALL_KINDS (FR-011); 59 distinct values.
+      enum: [mente, regista, animali, mare, biografia, intervista, analisi, racconto, episodio, previsione,
+             mistero, oggetto, schizzo, cerchio, gruppo, romanzo, 'god mode',
+             talk-host, talk-guest, talk-listen, talk-voice, talk-twist, talk-offair, talk-review, talk-story, talk-recap,
+             probe,
+             bibbia, agende, mondo, ascolto, battuta, ordine, comando, esecuzione, esterni, diario, sbarco, report,
+             archive-generate,
+             piano, finale, scena, personaggi, capitolo, controllo, lettore, revisione, serie, eredita, orienta,
+             verifica, chiusura, pignolo, rilettura, mirata, registro, stesura, aiuto]
+    Tier: { type: string, enum: [main, light] }
+    Provider: { type: string, enum: [anthropic, lmstudio] }
+    LlmRequest:
+      type: object
+      additionalProperties: false
+      required: [kind, tier, prompt]
+      description: FR-028. The client never names a model.
+      properties:
+        kind: { $ref: '#/components/schemas/LlmCallKind' }
+        tier: { $ref: '#/components/schemas/Tier' }
+        lowLatency: { type: boolean, description: "Asks for the main model without an effort setting (P-01a); ignored with tier light." }
+        attempt: { type: integer, minimum: 0, maximum: 5, description: "Retry number of the same logical call, 0 on the first try, at most 5; a value outside 0-5 is 400 invalid_request (FR-028)." }
+        prompt: { type: string, minLength: 1 }
+        schema: { type: object, description: "JSON Schema of the expected answer, not a format tag (FR-018); at most 32 KB serialized, else 400 (FR-044)." }
+        maxTokens: { type: integer, minimum: 1, description: Clamped to 8192 for main and 2048 for light (FR-044). }
+        gameId: { type: string, description: Optional; absent or unknown is accepted and uses the per-call backoff scope (S-08). }
+    LlmResult:
+      type: object
+      additionalProperties: false
+      required: [value]
+      properties:
+        value: { description: The parsed JSON answer (P-01, L-03). }
+        usage:
+          type: object
+          additionalProperties: false
+          properties:
+            inputTokens: { type: integer, minimum: 0 }
+            outputTokens: { type: integer, minimum: 0 }
+    Health:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status: { const: ok }
+    LoadedModel:
+      type: object
+      additionalProperties: false
+      required: [id, contextLength]
+      properties:
+        id: { type: string }
+        contextLength: { type: [integer, 'null'], description: "Null only when LM Studio does not report it. Below 8192 the settings page warns for the model chosen in that tier (US2 scenario 3)." }
+    ProviderModels:
+      type: object
+      additionalProperties: false
+      required: [id, available, allowedModels]
+      description: FR-027.
+      properties:
+        id: { $ref: '#/components/schemas/Provider' }
+        available:
+          type: boolean
+          description: >
+            anthropic: a key is configured, at least one allowed model has a price, and the last
+            background model-list probe succeeded (no tokens; at most once a minute, 5 s timeout,
+            only while anthropic is the selected provider); this route always answers from the
+            cached value and never waits for the probe. lmstudio: GET /api/v0/models answered
+            within the poll timeout. The status bar's provider indicator reads this field.
+        allowedModels:
+          type: object
+          additionalProperties: false
+          required: [main, light]
+          description: Allowed models per tier (FR-027); for lmstudio the loaded models that are also allowed (US2 scenario 1). A model without a price is never listed (FR-030).
+          properties:
+            main: { type: array, items: { type: string } }
+            light: { type: array, items: { type: string } }
+        loadedModels:
+          type: array
+          items: { $ref: '#/components/schemas/LoadedModel' }
+          description: lmstudio only, empty when LM Studio is unreachable; absent on anthropic.
+    Models:
+      type: object
+      additionalProperties: false
+      required: [providers]
+      properties:
+        providers: { type: array, items: { $ref: '#/components/schemas/ProviderModels' } }
+    Caps:
+      type: object
+      additionalProperties: false
+      required: [ratePerMinute, dailySpendUsd]
+      properties:
+        ratePerMinute: { type: integer, minimum: 1 }
+        dailySpendUsd: { type: number, minimum: 0 }
+    SettingsUpdate:
+      type: object
+      additionalProperties: false
+      required: [provider, models, caps]
+      description: FR-029. Only a configured provider, allowed models, caps lower than or equal to the env ceilings.
+      properties:
+        provider: { $ref: '#/components/schemas/Provider' }
+        models:
+          type: object
+          additionalProperties: false
+          required: [main, light]
+          description: The model chosen for each tier, one of allowedModels of GET /models.
+          properties:
+            main: { type: string }
+            light: { type: string }
+        caps: { $ref: '#/components/schemas/Caps' }
+    Settings:
+      allOf:
+        - $ref: '#/components/schemas/SettingsUpdate'
+        - type: object
+          required: [ceilings]
+          properties:
+            ceilings:
+              $ref: '#/components/schemas/Caps'
+              description: >
+                The env ceilings (FR-031), read-only. The settings page bounds its inputs with
+                them, so the player is told the maximum before saving (US2 scenario 4) instead
+                of meeting a 400.
+      # ARTIFACT_URL (US4, 4.9) is web-tier configuration (research.md R-24); no API field.
+    CharacterFields:
+      type: object
+      additionalProperties: true
+      description: >
+        The record keys that a client may write, derived from the core zod CharacterSchema
+        (FR-013) without the store-owned keys. Every object level is open (additionalProperties
+        true) and every nested value is typed loosely, because the response serializer drops
+        what a schema does not declare, and FR-013 and FR-026 require unknown and legacy fields
+        to survive untouched (research.md R-06). zod in core is the validator; this schema only
+        documents.
+      properties:
+        schema: { const: personaggio/1 }
+        updated: { type: string, description: "Legacy ISO string; rewritten by every save (archui.js:38)." }
+        name: { type: string }
+        sex: { enum: [m, f] }
+        age: { type: integer }
+        temper: { type: string }
+        short: { type: string }
+        tags: { type: array, items: { type: string } }
+        sections: { type: object, additionalProperties: { type: string } }
+        secrets: { type: array, items: { type: string } }
+        goals: { type: array, items: { type: string } }
+        relations: { type: array, items: { type: object, additionalProperties: true, description: "{ to, type, int, view }, to being a character id" } }
+        pendingRelations: { type: array, items: {} }
+        status: { enum: [vivo, deceduto] }
+        disabled: { type: boolean }
+        life: { type: integer }
+        lives: { type: array, items: {} }
+        deaths: {}
+        origin: {}
+        sessions: { type: array, items: {} }
+        summary: { type: string }
+        era: { type: string }
+        role: { type: string }
+        style: { type: string }
+        venture: {}
+        novels: { type: array, items: {} }
+    StoreOwned:
+      type: object
+      required: [id, version]
+      properties:
+        id: { type: string, format: uuid }
+        legacyId: { type: string, description: "The legacy id (c_…, f_…) this uuid was derived from (FR-017)." }
+        version:
+          type: integer
+          minimum: 1
+          description: >
+            The number the history shows as vN. It grows by one on a versioned save («Salva»,
+            restore, import over a stored character, the pack over an archived one) and never
+            on an in-place update (P-03).
+    CharacterSnapshot:
+      description: A character as stored in the history; it has no revision (data-model.md).
+      allOf:
+        - $ref: '#/components/schemas/CharacterFields'
+        - $ref: '#/components/schemas/StoreOwned'
+    Character:
+      description: The current record as the server returns it.
+      allOf:
+        - $ref: '#/components/schemas/CharacterFields'
+        - $ref: '#/components/schemas/StoreOwned'
+        - type: object
+          required: [revision]
+          properties:
+            revision:
+              type: integer
+              minimum: 1
+              description: >
+                Concurrency counter, not a version: it grows on every write of any kind. Send it
+                back as expectedRevision; never send version there.
+    CharacterInput:
+      description: >
+        A character as the editor or the preview sends it. The store-owned keys are not part
+        of it: on every write id, legacyId, version and revision in the body are removed by the
+        planner before anything is stored, except that on PUT a body id that differs from the
+        path id is 400 invalid_request (never silently replaced). expectedRevision alone decides
+        concurrency. On POST the server assigns a fresh id (FR-017).
+      allOf: [{ $ref: '#/components/schemas/CharacterFields' }]
+    Warning:
+      type: object
+      additionalProperties: false
+      required: [code, characterId, otherId, ownType, otherType]
+      description: >
+        A notice the save produced; nothing failed. The UI composes the player's text from its
+        i18n key for code and the names it holds (FR-074).
+      properties:
+        code:
+          type: string
+          enum: [relation_mismatch]
+          description: >
+            relation_mismatch: the legacy «⚠ Incoerenza: per X il rapporto con Y è «a», per Y è
+            «b».» (archui.js:306). A relation added in this save points to a character that
+            already has a relation back with a different type, and «vale per entrambi» was on.
+        characterId: { type: string, format: uuid, description: The character that was saved. }
+        otherId: { type: string, format: uuid, description: The character the relation points to. }
+        ownType: { type: string, description: The type written on the saved character. }
+        otherType: { type: string, description: The type the other character already has. }
+    CharacterWriteAnswer:
+      type: object
+      additionalProperties: false
+      required: [character, warnings]
+      properties:
+        character: { $ref: '#/components/schemas/Character' }
+        warnings: { type: array, items: { $ref: '#/components/schemas/Warning' }, description: Always present; empty when none. }
+    CharacterAnswer:
+      type: object
+      additionalProperties: false
+      required: [character]
+      properties:
+        character: { $ref: '#/components/schemas/Character' }
+    CharacterVersion:
+      type: object
+      additionalProperties: false
+      required: [version, at, reason, data]
+      description: One prior version, as the legacy history shows it ({ v, at, why, data }, archui.js:37, 280). Prior versions only; the current one is GET /characters/{id}.
+      properties:
+        version: { type: integer, minimum: 1 }
+        at: { type: [string, 'null'], description: "That version's updated; null only for imported rows without it." }
+        reason: { type: [string, 'null'], description: "Stored legacy text (for example «modifica manuale», «ripristino v3»), shown as it is; null only for imported rows without why." }
+        data: { $ref: '#/components/schemas/CharacterSnapshot' }
+    ArchiveFile:
+      type: object
+      additionalProperties: true
+      required: [schema, chars]
+      description: archivio/1 as archui.js:211 writes it; chars may carry inline versions on import (FR-025), never on export (FR-026).
+      properties:
+        schema: { const: archivio/1 }
+        exported: { type: string }
+        chars: { type: array, items: { type: object, additionalProperties: true } }
+  responses:
+    Error400: { description: invalid_request, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } } }
+    Error401: { description: "unauthorized: in the web app this means the web tier lost the token; show the restart text of US3 scenario 2.", content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } } }
+    Error403: { description: forbidden_origin (Host, Origin or Sec-Fetch-Site refused, FR-043), content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } } }
+    Error404Character: { description: "not_found: no such character, or it is soft-deleted (FR-023: it disappears from every route).", content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } } }
+    Error409Edit: { description: "conflict: the character changed after it was opened (stale expectedRevision, FR-022), or a character the batch also touches changed; nothing was saved. Offer to reload without losing the typed text (edge cases).", content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } } }
+    Error409Batch: { description: "conflict: another write changed a character this request also touches; nothing was saved; repeating the action is safe (R-18).", content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } } }
+    Error413: { description: payload_too_large (FR-044), content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } } }
+    Error500: { description: internal, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } } }
+paths:
+  /health:
+    get:
+      summary: Server health for the compose check and the status bar (US3, FR-024, FR-041); the only route without the token.
+      security: []
+      responses:
+        '200': { description: Migrations and seeds done, database reachable, content: { application/json: { schema: { $ref: '#/components/schemas/Health' } } } }
+        '403': { $ref: '#/components/responses/Error403' }
+        '503': { description: "unavailable: the server answered, so it is up; the database is not ready (starting or down). Show the database as down. No answer at all means the server is down; the provider indicator comes from available in GET /models.", content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } } }
+  /models:
+    get:
+      summary: Configured providers, availability, allowed models per tier, LM Studio loaded models with their context (FR-027).
+      responses:
+        '200': { description: Always 200; an unreachable provider is available false (edge cases), content: { application/json: { schema: { $ref: '#/components/schemas/Models' } } } }
+        '401': { $ref: '#/components/responses/Error401' }
+        '403': { $ref: '#/components/responses/Error403' }
+  /llm:
+    post:
+      summary: One model call (FR-028). The server never retries a provider call, the SDK's own retries included (S-08). Body limit 256 KB (FR-044).
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/LlmRequest' } } } }
+      responses:
+        '200': { description: Parsed answer, content: { application/json: { schema: { $ref: '#/components/schemas/LlmResult' } } } }
+        '400': { $ref: '#/components/responses/Error400' }
+        '401': { $ref: '#/components/responses/Error401' }
+        '403': { $ref: '#/components/responses/Error403' }
+        '413': { $ref: '#/components/responses/Error413' }
+        '429':
+          description: rate_limited (provider 429 or 529, or the server's per-minute limit; with Retry-After) or budget (daily spend cap; never with Retry-After) (FR-021, FR-045)
+          headers: { Retry-After: { $ref: '#/components/headers/RetryAfter' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } }
+        '502': { description: unparseable, denied or model_refused (FR-028 table), content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } } }
+        '503': { description: unavailable, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } } }
+        '504': { description: timeout (L-03 per-tier timeout), content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } } }
+        '500': { $ref: '#/components/responses/Error500' }
+  /settings:
+    get:
+      summary: Server settings (FR-029); the env defaults until the first PUT. The interface language is a browser preference, not here.
+      responses:
+        '200': { description: Current settings, content: { application/json: { schema: { $ref: '#/components/schemas/Settings' } } } }
+        '401': { $ref: '#/components/responses/Error401' }
+        '403': { $ref: '#/components/responses/Error403' }
+    put:
+      summary: Replace the settings; caps can only be lowered (US2 scenario 4).
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/SettingsUpdate' } } } }
+      responses:
+        '200': { description: Saved settings, content: { application/json: { schema: { $ref: '#/components/schemas/Settings' } } } }
+        '400': { $ref: '#/components/responses/Error400' }
+        '401': { $ref: '#/components/responses/Error401' }
+        '403': { $ref: '#/components/responses/Error403' }
+  /characters:
+    get:
+      summary: Every character that is not soft-deleted (FR-023); filters, search and tabs are UI concerns.
+      responses:
+        '200':
+          description: The list
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: false, required: [characters], properties: { characters: { type: array, description: 'In insertion order (data-model.md, one order).', items: { $ref: '#/components/schemas/Character' } } } }
+        '401': { $ref: '#/components/responses/Error401' }
+        '403': { $ref: '#/components/responses/Error403' }
+    post:
+      summary: Create (editor save of a new character or of a previewed file, FR-025); always a first save; runs the core create planner with the editor's normalisations (FR-016, P-03a). Body limit 16 MB (FR-044).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [character]
+              properties:
+                character: { $ref: '#/components/schemas/CharacterInput' }
+                symmetricRelations: { type: boolean, default: true, description: "The editor's «vale per entrambi» (archui.js:278, 304-306): also writes each relation back on the other character, as an in-place update in the same batch (FR-016)." }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/CharacterWriteAnswer' } } } }
+        '400': { $ref: '#/components/responses/Error400' }
+        '401': { $ref: '#/components/responses/Error401' }
+        '403': { $ref: '#/components/responses/Error403' }
+        '409': { $ref: '#/components/responses/Error409Batch' }
+        '413': { $ref: '#/components/responses/Error413' }
+  /characters/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid }, description: The character. On PUT a body id, if present, must equal it. }
+    get:
+      summary: One character; 404 when it is soft-deleted.
+      responses:
+        '200': { description: The character, content: { application/json: { schema: { $ref: '#/components/schemas/CharacterAnswer' } } } }
+        '401': { $ref: '#/components/responses/Error401' }
+        '403': { $ref: '#/components/responses/Error403' }
+        '404': { $ref: '#/components/responses/Error404Character' }
+    put:
+      summary: >
+        Edit (FR-016, FR-022). versioned is the editor's «Salva» (reason «modifica manuale», the
+        editor's normalisations, symmetric relations when asked); inPlace is for the game writes of
+        later WIs (P-03): the record is stored as sent (only updated and revision change), with no normalisation, no symmetric
+        relations and no history row. Body limit 16 MB.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [character, expectedRevision]
+              properties:
+                character: { $ref: '#/components/schemas/CharacterInput' }
+                expectedRevision: { type: integer, minimum: 1, description: The revision the client read; the only concurrency input. }
+                mode: { enum: [versioned, inPlace], default: versioned }
+                symmetricRelations: { type: boolean, description: "As on POST. Default true with mode versioned and false with inPlace; true with inPlace is 400 invalid_request." }
+      responses:
+        '200': { description: Saved, content: { application/json: { schema: { $ref: '#/components/schemas/CharacterWriteAnswer' } } } }
+        '400': { $ref: '#/components/responses/Error400' }
+        '401': { $ref: '#/components/responses/Error401' }
+        '403': { $ref: '#/components/responses/Error403' }
+        '404': { $ref: '#/components/responses/Error404Character' }
+        '409': { $ref: '#/components/responses/Error409Edit' }
+        '413': { $ref: '#/components/responses/Error413' }
+    delete:
+      summary: Soft delete; relations pointing to it are removed from the others in the same transaction (FR-023).
+      responses:
+        '204': { description: Deleted }
+        '401': { $ref: '#/components/responses/Error401' }
+        '403': { $ref: '#/components/responses/Error403' }
+        '404': { $ref: '#/components/responses/Error404Character' }
+        '409': { $ref: '#/components/responses/Error409Batch' }
+  /characters/{id}/versions:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      summary: The prior versions, newest first, at most 15 (P-03, archui.js:280); the current version is not in the list.
+      responses:
+        '200':
+          description: History
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: false, required: [versions], properties: { versions: { type: array, maxItems: 15, items: { $ref: '#/components/schemas/CharacterVersion' } } } }
+        '401': { $ref: '#/components/responses/Error401' }
+        '403': { $ref: '#/components/responses/Error403' }
+        '404': { $ref: '#/components/responses/Error404Character' }
+  /characters/{id}/restore:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      summary: Restore version N as a new current version, reason «ripristino vN» (archui.js:293, FR-022). Body limit 16 MB.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [version, expectedRevision]
+              properties:
+                version: { type: integer, minimum: 1, description: The version number to restore, as listed by GET .../versions. }
+                expectedRevision: { type: integer, minimum: 1 }
+      responses:
+        '200': { description: Restored, content: { application/json: { schema: { $ref: '#/components/schemas/CharacterAnswer' } } } }
+        '400': { $ref: '#/components/responses/Error400' }
+        '401': { $ref: '#/components/responses/Error401' }
+        '403': { $ref: '#/components/responses/Error403' }
+        '404': { description: "not_found: no such character (or soft-deleted), or that version is no longer in the history.", content: { application/json: { schema: { $ref: '#/components/schemas/ErrorEnvelope' } } } }
+        '409': { $ref: '#/components/responses/Error409Edit' }
+        '413': { $ref: '#/components/responses/Error413' }
+  /characters/pack:
+    post:
+      summary: «Personaggi pronti», both packs with the legacy skip rule (archui.js:209, FR-024).
+      responses:
+        '200':
+          description: How many were added, counted as the legacy toast counts them (archui.js:209, one per save); a soft-deleted pack character restored by the action counts as added.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: false, required: [added], properties: { added: { type: integer, minimum: 0 } } }
+        '401': { $ref: '#/components/responses/Error401' }
+        '403': { $ref: '#/components/responses/Error403' }
+        '409': { $ref: '#/components/responses/Error409Batch' }
+  /characters/import:
+    post:
+      summary: Import an archivio/1 file with the legacy skip rule (archui.js:249, FR-025, FR-017). Single character files never come here. Body limit 16 MB.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ArchiveFile' } } } }
+      responses:
+        '200':
+          description: Counts, as the legacy toast shows them (archui.js:249); imported counts new characters, stored ones replaced by a newer file entry and soft-deleted ones restored; skipped counts entries whose stored copy is as new or newer.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: false, required: [imported, skipped], properties: { imported: { type: integer, minimum: 0 }, skipped: { type: integer, minimum: 0 } } }
+        '400': { $ref: '#/components/responses/Error400' }
+        '401': { $ref: '#/components/responses/Error401' }
+        '403': { $ref: '#/components/responses/Error403' }
+        '409': { $ref: '#/components/responses/Error409Batch' }
+        '413': { $ref: '#/components/responses/Error413' }
+  /characters/export:
+    get:
+      summary: archivio/1 without versions, importable by the legacy artifact unchanged (FR-026, archui.js:211).
+      responses:
+        '200': { description: The archive file, content: { application/json: { schema: { $ref: '#/components/schemas/ArchiveFile' } } } }
+        '401': { $ref: '#/components/responses/Error401' }
+        '403': { $ref: '#/components/responses/Error403' }
