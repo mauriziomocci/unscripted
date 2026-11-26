@@ -9,3 +9,4 @@ docs/
 packages/core/test/fixtures/characters/
 
 packages/core/src/prompts/
+packages/core/src/content/

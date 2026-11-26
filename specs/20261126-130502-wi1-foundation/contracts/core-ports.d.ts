@@ -122,6 +122,8 @@ export interface Character {
 export declare const CharacterSchema: unknown;          // zod looseObject at every level (data-model.md)
 export declare const CharacterInputSchema: unknown;
 export declare const CharacterSnapshotSchema: unknown;
+/** The 16 ready-made present characters of the legacy `archpack.js` (FR-024), parsed once at load. */
+export declare const PRESENT_PACK: readonly Character[];
 /** Request-side JSON Schema (draft-07, io 'input') of the three records, computed once in core from private unguarded shapes; routes and documents use these, never a shape. */
 export declare const CHARACTER_JSON_SCHEMA: JsonSchema;
 export declare const CHARACTER_INPUT_JSON_SCHEMA: JsonSchema;

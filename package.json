@@ -14,7 +14,7 @@
     "golden:record": "echo 'golden:record: not yet wired' && exit 1",
     "golden:check": "echo 'golden:check: not yet wired' && exit 1",
     "lint:dup": "jscpd .",
-    "content:generate": "node scripts/generate-prompt-modules.ts"
+    "content:generate": "node scripts/generate-prompt-modules.ts && node scripts/generate-pack-content.ts"
   },
   "devDependencies": {
     "typescript": "catalog:",

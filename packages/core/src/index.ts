@@ -40,6 +40,7 @@ export {
 } from './archive/planners/errors';
 export { ARCHIVE_ROLE_KEYS, ROLE_PROMPT_NAMES } from './archive/roles';
 export { StoreArchive, type StoreArchiveDeps } from './archive/storeArchive';
+export { PRESENT_PACK } from './content/presentPack';
 export { GameEventSchema, type GameEvent } from './events/gameEvent';
 export { extractJson } from './json/extract';
 export { BACKOFF_SCHEDULES, backoffWaitMs, mayRetry } from './llm/backoff';
