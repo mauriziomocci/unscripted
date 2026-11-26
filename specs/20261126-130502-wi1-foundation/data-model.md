@@ -121,21 +121,23 @@ Deferred on purpose to WI-2 (no consumer in WI-1, so no column now): game status
 | `name` | `string` | empty allowed in the record; the edit planner refuses an empty name (FR-016) |
 | `sex` | `'m' \| 'f'` | |
 | `age` | `int` | any integer in the record (edge case, `engine.js:1347`); clamps belong to the parser (3-95, `archui.js:70`) and the editor save (3-999 for `era: 'romanzo'`, else 3-95; 35 when empty, `archui.js:297`) |
-| `temper`, `short` | `string` | |
-| `tags` | `string[]` | |
-| `sections` | record of `identita`, `storia`, `carattere`, `valori`, `paure`, `parlata`, `relazioni_stile`, `altro` to `string`, all optional | no length cap in the record (FR-013) |
-| `secrets`, `goals` | `string[]` | no count cap in the record |
-| `relations` | `{ to: string, type: string, int: number, view: string }[]` | `to` is a character id |
-| `pendingRelations` | array, legacy shape | resolved by name when the target appears (`archui.js:85-88`) |
+| `temper`, `short` | `string` optional | |
+| `tags` | `string[]` optional | |
+| `sections` | optional record of `identita`, `storia`, `carattere`, `valori`, `paure`, `parlata`, `relazioni_stile`, `altro` to `string`, all optional | no length cap in the record (FR-013) |
+| `secrets`, `goals` | `string[]` optional | no count cap in the record |
+| `relations` | `{ to: string, type: string, int?: number, view?: string }[]` optional | `to` is a character id; `int` and `view` are optional because the legacy reads them with a default (`archui.js:132`, `r.int \|\| 0`) |
+| `pendingRelations` | array of `{ name: string, ... }` optional, legacy shape | resolved by name when the target appears (`archui.js:85-88`) |
 | `status` | `'vivo' \| 'deceduto'` | |
 | `disabled` | `boolean` optional | |
-| `life` | `int`; `lives`: array; `deaths`: number or array as stored | legacy shapes, passthrough inside |
+| `life` | `int`; `lives`: array; `deaths`: number or array as stored; all optional | legacy shapes, passthrough inside |
 | `origin` | object or `null`, optional `env` (`'romanzo'` allowed, AM2-06) | |
-| `sessions` | array; `summary`: string optional | |
+| `sessions` | array, optional; `summary`: string optional | |
 | `era` | `string` optional | `'futuro'`, `'romanzo'`, any other value reads as present (`archfuturo.js:29`); no enum (AM-07) |
 | `role`, `style` | `string` optional | no cap or enum in the record (AM-07) |
 | `venture` | `{ missions, log, medals }` optional | legacy shape (`ventureui.js:564-569`) |
 | `novels` | array of `{ title, series, volume, fate, date }`, optional | at most 20 memos as the legacy writes them (`romanzoui.js:235-247`); the cap is the writer's (WI-8), the record accepts what it reads |
+
+**Required keys.** Only the nine keys of the contract sketch are required: `schema`, `id`, `version`, `revision`, `updated`, `name`, `sex`, `age`, `status`. Every other key is optional and typed when present; the record never invents a missing key, so it round-trips exactly as stored. `CharacterInput` leaves out `id`, `legacyId`, `version`, `revision` and makes `updated` optional; `CharacterSnapshot` leaves out `revision`. Derive JSON Schema (routes, documents) from the exported shapes `CharacterShape`, `CharacterInputShape` and `CharacterSnapshotShape` with `z.toJSONSchema(shape, { io: 'input' })`, never from the guarded schemas, whose prototype-key pipe has no JSON Schema form.
 
 **Nested objects are open.** zod parses the keys above with `looseObject` at every object level (`relations[]`, `origin`, `lives[]` and `lives[].death`, `venture`, `novels[]`, `sections`), never `z.object`, which strips unknown keys by default; the route schemas declare nested values loosely for the same reason (R-06). A round-trip test runs four real records through `POST`, `GET`, `GET .../versions` and the export with deep equality: one from `archpack.js`, one with `venture.missions`, `log`, `medals`, one with `novels[]` and `origin.env: 'romanzo'`, one with `lives[].death` (review I2).
 
@@ -146,7 +148,7 @@ Deferred on purpose to WI-2 (no consumer in WI-1, so no column now): game status
 - An imported archive is validated with zod before any write (FR-046); a refused file writes nothing.
 - The 200,000-character file cap, the 20,000-character section cap and the 12-item caps belong to `archParse` only (FR-014, edge cases).
 
-**Ids (FR-017).** `mapIncomingId(id, newId)`: a uuid is kept; a non-empty non-uuid string becomes `v5(id, LEGACY_ID_NAMESPACE)` with `legacyId = id`; missing, empty or `null` gets `newId()` (the empty and `null` cases are a v1 deviation with a parity row). One id map per import is applied to every `id` and every relation `to`, snapshots included. The export writes `legacyId` when present, else the uuid, for ids and relation targets.
+**Ids (FR-017).** `LEGACY_ID_NAMESPACE` is `f0338bcd-0d4a-461e-9b1f-5c8a0414a6bc`, generated once. It is data, not configuration: every imported legacy id in both forms derives from it, so changing it would give the same file new ids on the next import. Never change it; `ids.test.ts` pins it. `mapIncomingId(id, newId)`: a uuid is kept; a non-empty non-uuid string becomes `v5(id, LEGACY_ID_NAMESPACE)` with `legacyId = id`; missing, empty or `null` gets `newId()` (the empty and `null` cases are a v1 deviation with a parity row). One id map per import is applied to every `id` and every relation `to`, snapshots included. The export writes `legacyId` when present, else the uuid, for ids and relation targets.
 
 ## State transitions
 

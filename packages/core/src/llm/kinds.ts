@@ -4,9 +4,11 @@
  * The list is closed because the strings are persisted data: saved games and
  * archives keep per-kind call counts, and a renamed kind would orphan them.
  * The island kinds are the legacy ones verbatim (`engine.js:26`, and
- * `engine.js:1492` for `god mode`, which keeps its space); the other groups
- * are the strings the other environments pass to the same `ask` function
- * (`ui.js:862` lists them in the consumption panel). A kind used by two
+ * `engine.js:1492` for `god mode`, which keeps its space), the strings the
+ * island's consumption panel counts (`ui.js:862`). The talk show, Venture,
+ * archive generator and novel kinds are new names fixed by FR-011 at the
+ * call sites that will use them (`talk.js`, `talkfun.js`, `venture.js`,
+ * `archfuturo.js`, `romanzo.js`): those legacy loops pass no kind. A kind used by two
  * environments (`intervista`, `racconto`, `romanzo`) appears once.
  */
 export const LLM_CALL_KINDS = [
