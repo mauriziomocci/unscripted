@@ -95,4 +95,32 @@ export default defineConfig(
       ],
     },
   },
+  {
+    // The pure core reaches time, timers and randomness only through ports (A-03).
+    files: ['packages/core/**/*.ts'],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        ...['performance', 'setTimeout', 'setInterval', 'crypto'].map((name) => ({
+          name,
+          message: 'packages/core is pure: use the Clock, Scheduler or Rng port.',
+        })),
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "CallExpression[callee.object.name='Math'][callee.property.name='random']",
+          message: 'Math.random() is forbidden in core: use the Rng port.',
+        },
+        {
+          selector: "CallExpression[callee.object.name='Date'][callee.property.name='now']",
+          message: 'Date.now() is forbidden in core: use the Clock port.',
+        },
+        {
+          selector: "NewExpression[callee.name='Date'][arguments.length=0]",
+          message: 'new Date() without an argument reads the clock: use the Clock port.',
+        },
+      ],
+    },
+  },
 );
