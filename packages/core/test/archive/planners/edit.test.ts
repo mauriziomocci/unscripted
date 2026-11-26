@@ -107,3 +107,89 @@ describe('planEdit, refusals', () => {
     );
   });
 });
+
+const FRIEND = { to: 'friend', type: 'amici', int: 2, view: 'la stima' };
+
+/** An edit that adds `relation` to the target, with `other` as the character it points to. */
+function editWithRelation(
+  other: StoredCharacter,
+  relation: { to: string; type: string; int: number; view: string },
+  before: (typeof FRIEND)[] = [],
+) {
+  const holder = makeCharacter({ ...target, relations: before });
+  return planEdit(
+    [stored(holder), other],
+    holder.id,
+    input({ age: 30, relations: [relation] }),
+    5,
+    makeDeps(),
+    { mode: 'versioned', symmetricRelations: true },
+  );
+}
+
+describe('planEdit, symmetric relations (archui.js:278, 304-306)', () => {
+  it('writes the reciprocal relation on the other character as an in-place update in the same batch', () => {
+    const friend = makeCharacter({ id: 'friend', name: 'Bea', revision: 2 });
+    const { batch, warnings } = editWithRelation(stored(friend), FRIEND);
+    expect(warnings).toEqual([]);
+    expect(batch).toHaveLength(2);
+    expect(batch[1]).toEqual({
+      kind: 'inPlaceUpdate',
+      expectedRevision: 2,
+      character: {
+        ...friend,
+        updated: NOW_ISO,
+        relations: [{ to: target.id, type: 'amici', int: 2, view: '' }],
+      },
+    });
+  });
+
+  it('writes nothing when the other character already points back with the same type', () => {
+    const friend = makeCharacter({
+      id: 'friend',
+      relations: [{ to: target.id, type: 'amici', int: 0, view: '' }],
+    });
+    const { batch, warnings } = editWithRelation(stored(friend), FRIEND);
+    expect(batch).toHaveLength(1);
+    expect(warnings).toEqual([]);
+  });
+
+  it('skips a relation whose target is not in the archive or is deleted', () => {
+    const gone = makeCharacter({ id: 'friend' });
+    expect(editWithRelation(stored(gone, true), FRIEND).batch).toHaveLength(1);
+    expect(editWithRelation(stored(makeCharacter()), FRIEND).batch).toHaveLength(1);
+  });
+});
+
+describe('planEdit, the relation_mismatch warning (archui.js:304-306)', () => {
+  const friendBack = (type: string) =>
+    stored(makeCharacter({ id: 'friend', relations: [{ to: target.id, type, int: 0, view: '' }] }));
+
+  it('warns when a new relation has a different type from the one pointing back', () => {
+    const { batch, warnings } = editWithRelation(friendBack('rivali'), FRIEND);
+    expect(batch).toHaveLength(1);
+    expect(warnings).toEqual([
+      {
+        code: 'relation_mismatch',
+        characterId: target.id,
+        otherId: 'friend',
+        ownType: 'amici',
+        otherType: 'rivali',
+      },
+    ]);
+  });
+
+  it('does not warn about a relation that was there before the edit', () => {
+    expect(editWithRelation(friendBack('rivali'), FRIEND, [FRIEND]).warnings).toEqual([]);
+  });
+
+  it('refuses symmetric relations on an in-place edit with a typed error', () => {
+    const attempt = () =>
+      planEdit([stored(target)], target.id, input(), 5, makeDeps(), {
+        mode: 'inPlace',
+        symmetricRelations: true,
+      });
+    expect(attempt).toThrow(ArchiveRequestError);
+    expect(attempt).toThrow(expect.objectContaining({ code: 'symmetric_in_place' }));
+  });
+});
