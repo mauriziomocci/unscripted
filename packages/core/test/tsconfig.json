@@ -5,6 +5,7 @@
     "declaration": false,
     "emitDeclarationOnly": false,
     "noEmit": true,
+    "types": ["node"],
     "rootDir": ".."
   },
   "include": ["../src", "."]
