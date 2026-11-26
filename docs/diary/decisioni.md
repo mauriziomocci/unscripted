@@ -287,3 +287,21 @@ Le aggiunte al contratto API previste dal WI-2 in poi (sezione 2.9 della spec). 
   - modo di lavorare: pianificatore e revisore ripresi con il loro contesto, per spendere meno;
   - giocatore: nessun effetto diretto; l'archivio della v1 nasce su un contratto rivisto.
 - **Stato:** provvisoria, in attesa di conferma.
+
+### D-26-6: task del WI-1 approvati in via provvisoria (cancello leggero)
+
+- **Chi ha deciso:** la trinità. Il coordinatore ha fatto da Domenico; Matteo è il revisore indipendente, che ha fatto anche l'analisi di coerenza di Spec Kit fra spec, plan e task.
+- **Apertura usata:** `spec` e `design` della finestra D-26-0.
+- **Il ciclo:**
+  - giro 1: `VERDICT: NOT CONVERGED`, `FINDINGS: 0/14/4`, `COVERAGE: full` (righe 1-478 lette, la tabella di copertura controllata con uno script);
+  - giro di verifica, che chiude il ciclo: `VERDICT: CONVERGED`, `FINDINGS: 0/0/2`, `COVERAGE: partial`, perché ha campionato solo i passi corretti, mentre i controlli meccanici hanno coperto tutti i 334 passi. Lo dichiaro: è una copertura parziale per scelta di costo, non una zona non vista del giro 1.
+- **Cosa è stato approvato:** `specs/20261126-130502-wi1-foundation/tasks.md`, 334 passi (T001-T302 più 32 inseriti con suffisso), tutti i 67 FR e i 10 SC coperti; il caricamento dei testi dei prompt nel core con moduli `.ts` generati da uno script e un test di deriva (R-26), dopo che il revisore ha verificato che Node rifiuta l'import diretto di un `.md`.
+- **I due minori:** corretti subito (la frase di T267; OI-10 anticipato).
+- **OI-10 al proprietario adesso:** FR-013 dice che i campi sconosciuti passano «solo alla radice», mentre il modello dei dati li conserva a ogni livello perché nessun dato del codice vecchio vada perso. È una questione di modello dei dati e di contratto, e contraddice la lettera di FR-013: va al proprietario insieme al via per la costituzione, con risposta prima di T164; fino ad allora vale la scelta aperta.
+- **I cinque costi:**
+  - token: circa 6 punti fra generazione, revisione e correzioni;
+  - tempo: circa un'ora;
+  - qualità: 18 rilievi corretti prima del codice;
+  - modo di lavorare: Spec Kit completo (plan, task, analyze) con le regole più strette del progetto;
+  - giocatore: nessun effetto diretto.
+- **Stato:** provvisoria, in attesa di conferma.
