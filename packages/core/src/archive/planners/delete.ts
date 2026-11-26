@@ -1,20 +1,25 @@
 import type { Character } from '../character';
+import { type ArchiveDeps, nowIso } from '../deps';
 import type { CharacterBatch, CharacterVersion, StoredCharacter } from '../../store/characterStore';
 import { findLive } from './lookup';
 
 /**
  * Plans the soft delete of a character (`archui.js:294`, FR-023): the delete
  * itself, then one in-place update for every other live character that pointed
- * to it, with that relation removed, all in one batch. The others keep their
- * `updated`: the contract gives this planner no clock, and a relation cleanup
- * is not an edit the player made. Throws `CharacterNotFoundError`.
+ * to it, with that relation removed, all in one batch. The others get a fresh
+ * `updated`, as the legacy save does (`archSave`, `archui.js:38`, `294`). Throws `CharacterNotFoundError`.
  */
-export function planDelete(current: readonly StoredCharacter[], id: string): CharacterBatch {
+export function planDelete(
+  current: readonly StoredCharacter[],
+  id: string,
+  deps: ArchiveDeps,
+): CharacterBatch {
+  const stamp = nowIso(deps);
   const doomed = findLive(current, id);
   const cleanups = current.flatMap(({ character, archived }) => {
     const pointsToDoomed = (character.relations ?? []).some((relation) => relation.to === id);
     return !archived && character.id !== id && pointsToDoomed
-      ? [withoutRelationTo(character, id)]
+      ? [withoutRelationTo(character, id, stamp)]
       : [];
   });
   return [
@@ -27,7 +32,7 @@ export function planDelete(current: readonly StoredCharacter[], id: string): Cha
   ];
 }
 
-function withoutRelationTo(character: Character, id: string): Character {
+function withoutRelationTo(character: Character, id: string, updated: string): Character {
   return {
     ...character,
     relations: (character.relations ?? []).filter((relation) => relation.to !== id),
