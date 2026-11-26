@@ -8,6 +8,7 @@
     "./testing": "./src/testing/index.ts"
   },
   "dependencies": {
+    "uuid": "catalog:",
     "zod": "catalog:"
   }
 }
