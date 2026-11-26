@@ -64,6 +64,11 @@ describe('archRoleKey (archfuturo.js:22-27)', () => {
     expect(archRoleKey(text)).toBe(key);
   });
 
+  it('does not match «infermiere» or «infermiera»: the legacy pattern is /infermer/ (archfuturo.js:25), a defect tracked for WI-6', () => {
+    expect(archRoleKey('Infermiere')).toBe('');
+    expect(archRoleKey('Infermiera')).toBe('');
+  });
+
   it.each(['cuoco', '', '   '])('gives an empty string for the unknown value %j', (text) => {
     expect(archRoleKey(text)).toBe('');
   });

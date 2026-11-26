@@ -34,7 +34,11 @@ export interface StoredCharacter {
 /**
  * One write of a batch. `expectedRevision` is the concurrency guard: the
  * revision the caller read, or `null` for a first save, which must find no
- * such id.
+ * such id. The `version` and `revision` inside `character` are what the
+ * planner read; the store ignores them on a versioned or in-place write and
+ * computes the new ones (`version + 1` on a versioned save, `revision + 1` on
+ * every write), so a first save is the only write whose `version` it keeps
+ * (an import brings its own).
  */
 export type CharacterWrite =
   | {
