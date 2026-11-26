@@ -4,6 +4,13 @@ import { importX } from 'eslint-plugin-import-x';
 import { defineConfig } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 
+/** The vendored reference code may be read only by the builder and the golden harness. */
+const LEGACY_IMPORT = {
+  group: ['**/legacy/**'],
+  message:
+    'apps/artifact/legacy is vendored: only the artifact builder and the golden harness read it.',
+};
+
 /**
  * Root flat config, loaded through Node's native TypeScript support (the
  * `--flag` of the lint script) so no loader dependency is needed.
@@ -131,6 +138,7 @@ export default defineConfig(
         'error',
         {
           patterns: [
+            LEGACY_IMPORT,
             {
               group: ['drizzle-orm', 'drizzle-orm/*', 'pg', '**/db/**'],
               message: 'Route handlers use services from deps; the ORM and the driver stay in db/.',
@@ -139,5 +147,18 @@ export default defineConfig(
         },
       ],
     },
+  },
+  {
+    // Routes are left out because their own block repeats this pattern: the options
+    // of one rule do not merge across blocks.
+    files: ['**/*.{ts,tsx}'],
+    ignores: [
+      'apps/artifact/src/build/**',
+      'apps/artifact/test/**',
+      'tools/golden/**',
+      'scripts/generate-pack-content.ts',
+      'apps/server/src/routes/**',
+    ],
+    rules: { 'no-restricted-imports': ['error', { patterns: [LEGACY_IMPORT] }] },
   },
 );
