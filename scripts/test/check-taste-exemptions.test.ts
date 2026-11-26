@@ -8,6 +8,9 @@ describe('check-taste-exemptions', () => {
   it('reports every disable and every jscpd ignore without a written reason, whatever the rule', () => {
     expect(findUnjustifiedExemptions(FIXTURES)).toEqual([
       expect.objectContaining({ file: 'bare-structural-disable.ts', line: 1 }),
+      expect.objectContaining({ file: 'inline-config.ts', line: 1 }),
+      expect.objectContaining({ file: 'inline-env-global.ts', line: 1 }),
+      expect.objectContaining({ file: 'inline-env-global.ts', line: 2 }),
       // A folder that merely shares a name with a vendored one is still scanned.
       expect.objectContaining({ file: 'nested/legacy/hidden.ts', line: 1 }),
       expect.objectContaining({ file: 'unjustified-disable.ts', line: 1 }),

@@ -22,13 +22,15 @@ const EXCLUDED_PREFIXES = [
   'scripts/test/fixtures/',
 ];
 
-const ESLINT_DISABLE = /(?:\/\/|\/\*)\s*eslint-disable(?:-next-line|-line)?\b/;
+/** Every comment that switches a rule off or changes what ESLint knows: disables, inline config, env, globals. */
+const ESLINT_DIRECTIVE =
+  /(?:\/\/\s*eslint-disable(?:-next-line|-line)?\b|\/\*\s*(?:eslint-disable(?:-next-line|-line)?\b|eslint-env\b|eslint\s+[^\s:]+\s*:|globals?\s))/;
 const JSCPD_IGNORE = /(?:\/\/|\/\*)\s*jscpd:ignore-start/;
 const WRITTEN_REASON = /taste-exempt:\s*\S/;
 
 function violationInLine(line: string): string | undefined {
   if (WRITTEN_REASON.test(line)) return undefined;
-  if (ESLINT_DISABLE.test(line)) return 'eslint-disable without "taste-exempt: <reason>"';
+  if (ESLINT_DIRECTIVE.test(line)) return 'ESLint directive without "taste-exempt: <reason>"';
   return JSCPD_IGNORE.test(line) ? 'jscpd ignore without "taste-exempt: <reason>"' : undefined;
 }
 
