@@ -1,0 +1,35 @@
+# Local development stack (FR-060). No port is published here: the services
+# reach each other on the compose network, and every pnpm command runs in the
+# `server` container (FR-002).
+services:
+  db:
+    # Digest read on 2026-11-26 with `docker buildx imagetools inspect postgres:17-alpine`.
+    image: postgres:17-alpine@sha256:f9cf3e1f0066f0eb0c48707d864f0ac5941e9ff454a072077d97a4d278d07d73
+    environment:
+      POSTGRES_USER: unscripted
+      # Local-only credential of a database that has no published port.
+      POSTGRES_PASSWORD: unscripted
+      POSTGRES_DB: unscripted
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./compose/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U unscripted -d unscripted"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  server:
+    build:
+      context: compose/server
+      target: dev
+    volumes:
+      - .:/app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file:
+      - path: .envs/.local/server.env
+        required: false
+
+volumes:
+  db-data:
