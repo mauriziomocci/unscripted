@@ -2,19 +2,28 @@
 export type BackoffScheduleName = 'island' | 'talkshow' | 'venture' | 'archiveGenerate';
 
 /**
- * How one environment waits after the platform says `rate_limited`: the pause
- * before retry number `step` is `baseMs * factor^(min(step, maxStep) - 1)`.
+ * How one environment waits after the platform says `rate_limited` (S-08).
+ * Two counters are involved and must not be confused: the call's own
+ * `attempt` decides when to stop retrying ({@link mayRetry}); the `step`
+ * decides how long to wait ({@link backoffWaitMs}), and `scope` says where
+ * that step comes from. The wait before step `n` is
+ * `baseMs * factor^(min(n, maxStep) - 1)`.
  */
 export interface BackoffSchedule {
   /** Pause before the first retry, in ms. */
   readonly baseMs: number;
-  /** Multiplier applied to the pause at every further retry. */
+  /** Multiplier applied to the pause at every further step. */
   readonly factor: number;
-  /** Retries allowed before the call gives up and the error reaches the caller. */
+  /** Retries one call may make before the error reaches its caller. */
   readonly maxRetries: number;
   /** Step after which the pause stops growing; absent when `maxRetries` already bounds it. */
   readonly maxStep?: number;
-  /** `perGame`: one pause shared by every call of the game; `perCall`: each call waits alone. */
+  /**
+   * Where the step comes from. `perCall`: the call's own attempt number plus
+   * one. `perGame`: a step shared by every call of the game, raised on each
+   * rate limit and reset on success, so it can run past `maxRetries` and is
+   * then held at `maxStep`.
+   */
   readonly scope: 'perGame' | 'perCall';
   /** Calls allowed in flight at once; absent when the legacy code set no limit. */
   readonly maxInFlight?: number;
@@ -31,11 +40,12 @@ const LEGACY_FACTOR = 2;
 
 /**
  * The legacy loops, kept apart because their caps differ and goldens replay
- * them: island `engine.js:13-37` (shared pause, `attempt < 5`, step capped at
- * 5 so the longest wait is 240 s, two calls at once); talk show
- * `talk.js:78-87` (shared `TS.cool`, `attempt < 5`); Venture `llm.js:39-55`
- * (shared pause, `MAX_RETRY` 4, `MAX_INFLIGHT` 2); archive generator
- * `archfuturo.js:109-116` (a sleep inside the one call, `attempt < 3`).
+ * them: island `engine.js:13-37` (one shared step `coolStep`, capped at 5 so
+ * the longest wait is 240 s, `attempt < 5`, two calls at once); talk show
+ * `talk.js:85` (`15000 * 2 ** attempt`, `attempt < 5`); Venture `llm.js:51`
+ * (`COOL_BASE_MS * 2 ** attempt`, `MAX_RETRY` 4, `MAX_INFLIGHT` 2); archive
+ * generator `archfuturo.js:109-116` (a sleep inside the one call,
+ * `attempt < 3`). Only the island shares its step.
  */
 export const BACKOFF_SCHEDULES: BackoffPolicy = {
   island: {
@@ -46,12 +56,12 @@ export const BACKOFF_SCHEDULES: BackoffPolicy = {
     scope: 'perGame',
     maxInFlight: 2,
   },
-  talkshow: { baseMs: LEGACY_BASE_MS, factor: LEGACY_FACTOR, maxRetries: 5, scope: 'perGame' },
+  talkshow: { baseMs: LEGACY_BASE_MS, factor: LEGACY_FACTOR, maxRetries: 5, scope: 'perCall' },
   venture: {
     baseMs: LEGACY_BASE_MS,
     factor: LEGACY_FACTOR,
     maxRetries: 4,
-    scope: 'perGame',
+    scope: 'perCall',
     maxInFlight: 2,
   },
   archiveGenerate: {
@@ -62,16 +72,24 @@ export const BACKOFF_SCHEDULES: BackoffPolicy = {
   },
 };
 
+/** Whether a call that has made `attempt` retries so far (0 on its first failure) may retry again. */
+export function mayRetry(schedule: BackoffSchedule, attempt: number): boolean {
+  if (!Number.isInteger(attempt) || attempt < 0) {
+    throw new RangeError(`backoff attempt must be a non-negative integer, got ${String(attempt)}`);
+  }
+  return attempt < schedule.maxRetries;
+}
+
 /**
- * Wait in ms before retry number `step` (1-based), or `null` when the
- * schedule is exhausted and the error must reach the caller. A step that is
- * not a positive integer is a bug in the caller and throws.
+ * Wait in ms before the retry at `step` (1-based), held at `maxStep` when the
+ * schedule has one. It never returns "stop": whether to retry at all is
+ * {@link mayRetry}'s decision. A step that is not a positive integer is a bug
+ * in the caller and throws.
  */
-export function backoffWaitMs(schedule: BackoffSchedule, step: number): number | null {
+export function backoffWaitMs(schedule: BackoffSchedule, step: number): number {
   if (!Number.isInteger(step) || step < 1) {
     throw new RangeError(`backoff step must be a positive integer, got ${String(step)}`);
   }
-  if (step > schedule.maxRetries) return null;
   const growthSteps = Math.min(step, schedule.maxStep ?? step) - 1;
   return schedule.baseMs * schedule.factor ** growthSteps;
 }
