@@ -225,9 +225,11 @@ export interface ArchivePlanners {
   planCreate(current: readonly StoredCharacter[], input: CharacterInput, deps: ArchiveDeps, options: { symmetricRelations: boolean }): PlannedBatch;
   planEdit(current: readonly StoredCharacter[], id: string, input: CharacterInput, expectedRevision: number, deps: ArchiveDeps, options: { mode: 'versioned' | 'inPlace'; symmetricRelations: boolean }): PlannedBatch;
   planRestore(current: readonly StoredCharacter[], history: readonly CharacterVersion[], id: string, version: number, expectedRevision: number, deps: ArchiveDeps): CharacterBatch;
-  planDelete(current: readonly StoredCharacter[], id: string): CharacterBatch;
+  /** Needs the clock: the in-place cleanups stamp `updated` as archSave does (archui.js:38, 294). */
+  planDelete(current: readonly StoredCharacter[], id: string, deps: ArchiveDeps): CharacterBatch;
   planPack(current: readonly StoredCharacter[], packs: readonly (readonly Character[])[], deps: ArchiveDeps): CharacterBatch;
-  planImport(current: readonly StoredCharacter[], file: ArchiveFileV1, deps: ArchiveDeps): CharacterBatch;
+  /** `file` is `unknown`: the planner validates it (archivio/1, no prototype key, every character) and throws InvalidArchiveFileError; a bad file plans nothing. */
+  planImport(current: readonly StoredCharacter[], file: unknown, deps: ArchiveDeps): CharacterBatch;
 }
 
 /** The «✨ Genera» archive generator (FR-072, research R-25). Rules in core; labels in the UI locales (review N9). */
@@ -250,10 +252,16 @@ export declare function generateCharacter(llm: LlmClient, options: GeneratorOpti
 /** Distinct styles already used for a role, listed by the dialog (archfuturo.js:127, 136). */
 export declare function stylesForRole(crew: readonly Character[], role: string): readonly string[];
 
-/** archParse and archToMarkdown ported (FR-014); Italian messages verbatim. */
-export declare function parseCharacterFile(text: string, fileName: string): ParsedCharacterFile;
-export interface ParsedCharacterFile { readonly character: Character; readonly recognisedSections: number; readonly toOther: boolean; readonly error?: string; }
-export declare function characterToMarkdown(character: Character, options: { withSecrets: boolean }): string;
+/** archParse and archToMarkdown ported (FR-014); Italian messages verbatim.
+ *  The clock dates the origin label «importato da <file> · dd/mm» (archui.js:62). */
+export declare function parseCharacterFile(text: string, fileName: string, clock: Clock): ParsedCharacterFile;
+/** A refusal carries only the message (archui.js:82); a sheet is an editor preview, a CharacterInput without id, version, revision or updated.
+ *  `archive` is set when a JSON file is an `{ chars }` archive (archui.js:58): the import route takes it. */
+export type ParsedCharacterFile =
+  | { readonly error: string }
+  | { readonly character: CharacterInput; readonly recognisedSections: number; readonly otherSections: number; readonly archive?: unknown };
+/** `nameOf` is the legacy archGet (archui.js:133): it names a relation target, and must resolve LIVE characters only; a relation it cannot name is left out. */
+export declare function characterToMarkdown(character: CharacterInput, options: { withSecrets: boolean; nameOf: (id: string) => string | undefined }): string;
 export declare const LEGACY_ID_NAMESPACE: string;
 export declare function mapIncomingId(id: unknown, newId: () => string): { id: string; legacyId?: string };
 
