@@ -4,7 +4,8 @@
     "apps/artifact/legacy/**",
     "apps/server/drizzle/**",
     "scripts/test/fixtures/**",
-    "specs/**"
+    "specs/**",
+    "packages/core/src/prompts/**"
   ],
   "minLines": 11,
   "minTokens": 70,

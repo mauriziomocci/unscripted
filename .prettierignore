@@ -7,3 +7,5 @@ docs/
 .specify/
 .claude/
 packages/core/test/fixtures/characters/
+
+packages/core/src/prompts/

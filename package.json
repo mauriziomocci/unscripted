@@ -13,7 +13,8 @@
     "test": "vitest run --coverage",
     "golden:record": "echo 'golden:record: not yet wired' && exit 1",
     "golden:check": "echo 'golden:check: not yet wired' && exit 1",
-    "lint:dup": "jscpd ."
+    "lint:dup": "jscpd .",
+    "content:generate": "node scripts/generate-prompt-modules.ts"
   },
   "devDependencies": {
     "typescript": "catalog:",
