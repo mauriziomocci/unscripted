@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { Character } from '../src/archive/character';
+import type { Character, CharacterSnapshot } from '../src/archive/character';
 import { StaleWriteError } from '../src/store/errors';
-import type { CharacterStore } from '../src/store/characterStore';
+import type { CharacterStore, CharacterVersion } from '../src/store/characterStore';
 
 /** Builds a fresh, empty store for one test; a real store truncates its tables here. */
 export type CharacterStoreFactory = () => CharacterStore | Promise<CharacterStore>;
@@ -159,6 +159,102 @@ function describeListing(factory: CharacterStoreFactory): void {
   });
 }
 
+/** How many superseded versions a character keeps, besides its current one (`archui.js:37`, `.slice(-15)`). */
+const KEPT_VERSIONS = 15;
+const SAVE_REASON = 'modifica manuale';
+
+/** The character as the history keeps it: everything but the store's revision. */
+function snapshotOf(character: Character): CharacterSnapshot {
+  const snapshot: Record<string, unknown> = { ...character };
+  delete snapshot.revision;
+  return snapshot as CharacterSnapshot;
+}
+
+/** Saves the character again `times` times, each save with the stored revision it just produced. */
+async function saveVersions(store: CharacterStore, character: Character, times: number) {
+  for (let save = 1; save <= times; save += 1) {
+    await store.apply([
+      {
+        kind: 'versionedSave',
+        character: {
+          ...character,
+          age: 35 + save,
+          updated: `2026-11-21T08:00:${String(save).padStart(2, '0')}.000Z`,
+        },
+        expectedRevision: save,
+        reason: SAVE_REASON,
+      },
+    ]);
+  }
+}
+
+function describeHistoryRows(factory: CharacterStoreFactory): void {
+  it('adds a history row with the reason and the superseded timestamp on a versioned save', async () => {
+    const store = await factory();
+    const character = await firstSave(store);
+    await saveVersions(store, character, 1);
+    const [row, ...others] = await store.versions(character.id);
+    expect(others).toEqual([]);
+    expect(row).toMatchObject({ version: 1, at: FIRST_SAVE_AT, reason: SAVE_REASON });
+    expect(row?.data).toEqual(snapshotOf(character));
+  });
+
+  it('adds no row and keeps the version on an in-place update', async () => {
+    const store = await factory();
+    const character = await firstSave(store);
+    await store.apply([
+      { kind: 'inPlaceUpdate', character: { ...character, age: 60 }, expectedRevision: 1 },
+    ]);
+    expect(await store.versions(character.id)).toEqual([]);
+    expect((await store.get(character.id))?.version).toBe(1);
+  });
+
+  it('keeps the inline versions of a first save as history rows, newest first', async () => {
+    const store = await factory();
+    const character = makeCharacter({ version: 3 });
+    const inlineVersions: CharacterVersion[] = [1, 2].map((version) => ({
+      version,
+      at: `2026-11-1${String(version)}T08:00:00.000Z`,
+      reason: version === 1 ? null : 'import',
+      data: snapshotOf({ ...character, version, age: 20 + version }),
+    }));
+    await store.apply([
+      { kind: 'versionedSave', character, expectedRevision: null, reason: null, inlineVersions },
+    ]);
+    expect(await store.versions(character.id)).toEqual([...inlineVersions].reverse());
+  });
+}
+
+function describeRetention(factory: CharacterStoreFactory): void {
+  it('keeps 15 prior versions plus the current one, newest first', async () => {
+    const store = await factory();
+    const character = await firstSave(store);
+    await saveVersions(store, character, KEPT_VERSIONS + 2);
+    const rows = await store.versions(character.id);
+    expect(rows.map(({ version }) => version)).toEqual(
+      Array.from({ length: KEPT_VERSIONS }, (_, index) => KEPT_VERSIONS + 2 - index),
+    );
+    expect((await store.get(character.id))?.version).toBe(KEPT_VERSIONS + 3);
+  });
+
+  it('never reuses a version number after rows were dropped', async () => {
+    const store = await factory();
+    const character = await firstSave(store);
+    await saveVersions(store, character, KEPT_VERSIONS + 2);
+    await store.apply([
+      {
+        kind: 'versionedSave',
+        character,
+        expectedRevision: KEPT_VERSIONS + 3,
+        reason: SAVE_REASON,
+      },
+    ]);
+    const versions = (await store.versions(character.id)).map((row) => row.version);
+    expect(versions[0]).toBe(KEPT_VERSIONS + 3);
+    expect(new Set(versions).size).toBe(versions.length);
+  });
+}
+
 /**
  * The contract of a `CharacterStore` (FR-050): the same assertions run on the
  * in-memory double, `PgCharacterStore` and `IndexedDbStore`, which is what
@@ -178,6 +274,12 @@ export function describeCharacterStore(name: string, factory: CharacterStoreFact
     });
     describe('listing', () => {
       describeListing(factory);
+    });
+    describe('history', () => {
+      describeHistoryRows(factory);
+    });
+    describe('retention', () => {
+      describeRetention(factory);
     });
   });
 }
