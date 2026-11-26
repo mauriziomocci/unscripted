@@ -173,10 +173,16 @@ export default defineConfig(
     rules: {
       'no-restricted-syntax': [
         'error',
-        {
-          selector: "JSXAttribute[name.name='dangerouslySetInnerHTML']",
-          message: 'dangerouslySetInnerHTML is banned: render text, never injected HTML.',
-        },
+        ...[
+          "JSXAttribute[name.name='dangerouslySetInnerHTML']",
+          "Property[key.name='dangerouslySetInnerHTML']",
+          'AssignmentExpression[left.property.name=/^(innerHTML|outerHTML)$/]',
+          "CallExpression[callee.property.name='insertAdjacentHTML']",
+          "CallExpression[callee.object.name='document'][callee.property.name=/^(write|writeln)$/]",
+        ].map((selector) => ({
+          selector,
+          message: 'Injected HTML is banned: render text, never markup built from LLM output.',
+        })),
       ],
     },
   },
