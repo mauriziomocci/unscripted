@@ -11,17 +11,6 @@ export interface Violation {
   message: string;
 }
 
-/** The ESLint rules of the mechanical taste gate (research R-05). */
-const TASTE_RULES = new Set([
-  'max-lines-per-function',
-  'max-depth',
-  'complexity',
-  'max-nested-callbacks',
-  'no-empty',
-  '@typescript-eslint/no-floating-promises',
-  'local/no-swallowed-error',
-]);
-
 /** Folders never scanned: vendored or generated code, and the checker's own fixtures. */
 const SKIPPED_DIRECTORIES = new Set([
   '.git',
@@ -33,27 +22,13 @@ const SKIPPED_DIRECTORIES = new Set([
   'fixtures',
 ]);
 
-const ESLINT_DISABLE = /(?:\/\/|\/\*)\s*eslint-disable(?:-next-line|-line)?\b(.*)/;
+const ESLINT_DISABLE = /(?:\/\/|\/\*)\s*eslint-disable(?:-next-line|-line)?\b/;
 const JSCPD_IGNORE = /(?:\/\/|\/\*)\s*jscpd:ignore-start/;
 const WRITTEN_REASON = /taste-exempt:\s*\S/;
 
-/** A disable names the rules before the `--` description; naming none disables them all. */
-function disablesTasteRule(directiveTail: string): boolean {
-  const [rules = ''] = directiveTail.split('--');
-  const names = rules
-    .replace('*/', '')
-    .split(',')
-    .map((name) => name.trim())
-    .filter((name) => name !== '');
-  return names.length === 0 || names.some((name) => TASTE_RULES.has(name));
-}
-
 function violationInLine(line: string): string | undefined {
   if (WRITTEN_REASON.test(line)) return undefined;
-  const disable = ESLINT_DISABLE.exec(line);
-  if (disable && disablesTasteRule(disable[1] ?? '')) {
-    return 'disable of a taste rule without "taste-exempt: <reason>"';
-  }
+  if (ESLINT_DISABLE.test(line)) return 'eslint-disable without "taste-exempt: <reason>"';
   return JSCPD_IGNORE.test(line) ? 'jscpd ignore without "taste-exempt: <reason>"' : undefined;
 }
 
