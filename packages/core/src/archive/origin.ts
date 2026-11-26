@@ -1,7 +1,7 @@
 import type { Clock } from '../time/ports';
 
 /** Where a character came from, as the card and the editor show it (`archui.js:240, 265`). */
-export type CharacterOrigin = { label: string };
+export type CharacterOrigin = { label: string; env?: string };
 
 /** The day and month the legacy prints in its origin labels (`today()`, `archui.js:20`): `27/11`. */
 function today(clock: Clock): string {
@@ -13,7 +13,11 @@ export function importedOrigin(fileName: string, clock: Clock): CharacterOrigin 
   return { label: `importato da ${fileName || 'file'} · ${today(clock)}` };
 }
 
-/** The origin of a character made with «＋ Nuovo personaggio» (`archui.js:205`). */
-export function createdOrigin(clock: Clock): CharacterOrigin {
-  return { label: `creato nell'archivio · ${today(clock)}` };
+/**
+ * The origin of a character made with «＋ Nuovo personaggio» (`archui.js:205`);
+ * in the Future tab it also names the Venture (`archfuturo.js:65`).
+ */
+export function createdOrigin(clock: Clock, era?: string): CharacterOrigin {
+  const label = `creato nell'archivio · ${today(clock)}`;
+  return era === 'futuro' ? { env: 'venture', label } : { label };
 }

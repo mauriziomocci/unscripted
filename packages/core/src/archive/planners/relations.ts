@@ -1,6 +1,8 @@
 import type { Character } from '../character';
 import type { ArchiveWarning, CharacterWrite, StoredCharacter } from '../../store/characterStore';
-import { charactersAfter, resolveOne, withPendingResolved } from './pending';
+import type { CharacterInput } from '../character';
+import { omitKeys } from './input';
+import { resolveOne, withPendingResolved } from './pending';
 import type { PlannedBatch } from './types';
 
 type Relation = NonNullable<Character['relations']>[number];
@@ -55,13 +57,12 @@ function symmetricWrites(
 }
 
 /**
- * Completes a versioned save in the order of the legacy editor save: the saved
- * character's own pending relations are resolved first (`archui.js:251`), so the
- * links are among its relations; then, optionally, the reciprocal relations and
- * their warnings (`archui.js:306`), where the links just resolved count as
- * existing before the save; then every other holder of pending relations is
- * touched (`archui.js:307`). One batch. `before` are the relations the
- * character had before the edit, empty for a creation.
+ * Completes a versioned save in the order of the legacy editor save: optionally
+ * the reciprocal relations and their warnings (`archui.js:306`), then every
+ * holder of pending relations, the saved character included, is resolved and
+ * touched (`archui.js:307`), so the links of a sheet's «Rapporti» written at
+ * save have no back link, as in the legacy. One batch. `before` are the
+ * relations the character had before the edit, empty for a creation.
  */
 export function completeVersionedSave(
   current: readonly StoredCharacter[],
@@ -70,16 +71,28 @@ export function completeVersionedSave(
   symmetricRelations: boolean,
   stamp: string,
 ): PlannedBatch {
-  const resolved = resolveOne(save.character, charactersAfter(current, [save]));
-  const own = { ...save, character: resolved };
-  const ownLinks = (resolved.relations ?? []).filter(
-    (link) => !(save.character.relations ?? []).includes(link),
-  );
   const symmetric = symmetricRelations
-    ? symmetricWrites(current, resolved, [...before, ...ownLinks], stamp)
+    ? symmetricWrites(current, save.character, before, stamp)
     : { writes: [], warnings: [] };
   return {
-    batch: withPendingResolved(current, [own, ...symmetric.writes], stamp, true),
+    batch: withPendingResolved(current, [save, ...symmetric.writes], stamp, true),
     warnings: symmetric.warnings,
   };
+}
+
+/**
+ * The sheet read from a file with its pending relations resolved against the
+ * archive, as the import path does before the editor opens (`archui.js:250-251`).
+ * The caller passes the result to `planCreate`: the links are then relations of
+ * the sheet and the symmetric save writes their back links (`archui.js:306`).
+ * Other paths (an edit, «Riempi da file») must not call it, because the legacy
+ * resolves their pending relations only after the symmetric loop.
+ */
+export function resolvePendingForPreview(
+  input: CharacterInput,
+  current: readonly StoredCharacter[],
+): CharacterInput {
+  const everyone = current.filter((row) => !row.archived).map((row) => row.character);
+  const self = { ...input, id: '' } as Character;
+  return omitKeys(resolveOne(self, everyone), new Set(['id'])) as CharacterInput;
 }

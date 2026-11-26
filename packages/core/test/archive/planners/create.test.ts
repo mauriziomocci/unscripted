@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { CharacterInput } from '../../../src/archive/character';
 import { NormaliseError } from '../../../src/archive/normalise';
 import { planCreate } from '../../../src/archive/planners/create';
+import { resolvePendingForPreview } from '../../../src/archive/planners/relations';
 import { NOW_ISO, makeCharacter, makeDeps, stored } from './fixtures';
 
 const OPTIONS = { symmetricRelations: false };
@@ -58,6 +59,15 @@ describe('planCreate, the origin label (archui.js:62, 205)', () => {
     const origin = { label: 'importato da ada.md · 26/11' };
     const { batch } = planCreate([], input({ origin }), makeDeps(), OPTIONS);
     expect(batch[0]).toMatchObject({ character: { origin } });
+  });
+});
+
+describe('planCreate, the Future tab origin (archfuturo.js:65)', () => {
+  it('names the Venture in the origin of a future character', () => {
+    const { batch } = planCreate([], input({ era: 'futuro' }), makeDeps(), OPTIONS);
+    expect(batch[0]).toMatchObject({
+      character: { origin: { env: 'venture', label: "creato nell'archivio · 27/11" } },
+    });
   });
 });
 
@@ -149,28 +159,34 @@ describe('planCreate, symmetric relations (archui.js:304)', () => {
   });
 });
 
-describe('planCreate, a sheet read from a file (archui.js:250-251, 306)', () => {
-  it('links the people its Rapporti name, and the symmetric save links them back without a warning', () => {
-    const bea = makeCharacter({ name: 'Bea', revision: 3 });
-    const sent = input({
-      name: 'Ugo',
-      pendingRelations: [{ name: 'Bea', type: 'amici', int: 2, view: 'bella' }],
-    });
-    const { batch, warnings } = planCreate([stored(bea)], sent, makeDeps(), {
-      symmetricRelations: true,
-    });
+describe('planCreate, a sheet read from a file (archui.js:250-251, 306-307)', () => {
+  const bea = makeCharacter({ name: 'Bea', revision: 3 });
+  const sheet = input({
+    name: 'Ugo',
+    pendingRelations: [{ name: 'Bea', type: 'amici', int: 2, view: 'bella' }],
+  });
+  const create = (sent: CharacterInput) =>
+    planCreate([stored(bea)], sent, makeDeps(), { symmetricRelations: true });
+
+  it('links the people it names back, without a warning, when the import preview resolved them first', () => {
+    const { batch, warnings } = create(resolvePendingForPreview(sheet, [stored(bea)]));
     expect(warnings).toEqual([]);
     expect(batch).toHaveLength(2);
     expect(batch[0]).toMatchObject({
-      character: {
-        relations: [{ to: bea.id, type: 'amici', int: 2, view: 'bella' }],
-        pendingRelations: [],
-      },
+      character: { relations: [{ to: bea.id, type: 'amici', int: 2, view: 'bella' }] },
     });
     expect(batch[1]).toMatchObject({
       kind: 'inPlaceUpdate',
       expectedRevision: 3,
       character: { id: bea.id, relations: [{ to: 'new-1', type: 'amici', int: 2, view: '' }] },
+    });
+  });
+
+  it('writes no back link for a sheet whose relations were not resolved first, as «Riempi da file» (archui.js:291)', () => {
+    const { batch } = create(sheet);
+    expect(batch).toHaveLength(1);
+    expect(batch[0]).toMatchObject({
+      character: { relations: [{ to: bea.id }], pendingRelations: [] },
     });
   });
 });

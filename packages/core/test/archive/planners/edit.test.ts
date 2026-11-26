@@ -209,3 +209,19 @@ describe('planEdit, the other holders of pending relations (P-03, archui.js:307)
     });
   });
 });
+
+describe('planEdit, pending relations of the edited character (archui.js:214, 306-307)', () => {
+  it('links them after the symmetric loop, so the other side gets no back link', () => {
+    const bea = makeCharacter({ id: 'friend', name: 'Bea', revision: 2 });
+    const { batch } = planEdit(
+      [stored(target), stored(bea)],
+      target.id,
+      input({ pendingRelations: [{ name: 'Bea', type: 'amici', int: 1, view: '' }] }),
+      5,
+      makeDeps(),
+      { mode: 'versioned', symmetricRelations: true },
+    );
+    expect(batch).toHaveLength(1);
+    expect(batch[0]).toMatchObject({ character: { relations: [{ to: 'friend' }] } });
+  });
+});

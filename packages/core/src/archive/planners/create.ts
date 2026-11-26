@@ -25,7 +25,7 @@ export function planCreate(
   const updated = nowIso(deps);
   const character: Character = {
     ...normaliseEdit(withoutStoreKeys(input), id),
-    origin: input.origin ?? createdOrigin(deps.clock),
+    origin: input.origin ?? createdOrigin(deps.clock, input.era),
     id,
     version: 1,
     revision: 1,
