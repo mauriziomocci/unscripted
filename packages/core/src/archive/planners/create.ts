@@ -1,6 +1,7 @@
 import type { Character, CharacterInput } from '../character';
 import { type ArchiveDeps, nowIso } from '../deps';
 import { normaliseEdit } from '../normalise';
+import { createdOrigin } from '../origin';
 import type { StoredCharacter } from '../../store/characterStore';
 import { withoutStoreKeys } from './input';
 import { completeVersionedSave } from './relations';
@@ -24,6 +25,7 @@ export function planCreate(
   const updated = nowIso(deps);
   const character: Character = {
     ...normaliseEdit(withoutStoreKeys(input), id),
+    origin: input.origin ?? createdOrigin(deps.clock),
     id,
     version: 1,
     revision: 1,

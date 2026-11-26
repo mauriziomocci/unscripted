@@ -1,24 +1,31 @@
 import { type CharacterInput, CharacterInputSchema } from './character';
 import { blankCharacterInput } from './blank';
+import { importedOrigin } from './origin';
+import type { Clock } from '../time/ports';
 import { omitKeys } from './planners/input';
 import { archRoleKey } from './roles';
 import { TEXT_SECTION_KEYS } from './sections';
 
-/** A sheet read from a file: an editor preview, never stored as it is. */
-export interface ParsedCharacterFile {
-  /** Without the store-owned keys (`id`, `version`, `revision`) and without `updated`: the planners add them. */
-  readonly character: CharacterInput;
-  /** Headings filed under one of the nine known sections, for the «N sezioni riconosciute» note (`archui.js:307`). */
-  readonly recognisedSections: number;
-  /** Whether some heading was not recognised and its text went to «Altro». */
-  readonly toOther: boolean;
-  readonly error?: string;
-  /**
-   * Set when the file is an archive (`{ chars: [...] }`, `archui.js:57`): the
-   * parsed JSON, untouched, for the import route. `character` is then blank.
-   */
-  readonly archive?: unknown;
-}
+/**
+ * What reading a file gives (`archParse`, `archui.js:54-84`). An `error` is a
+ * refusal with the legacy message and nothing else (`archui.js:82`). A
+ * `character` is an editor preview, never stored as it is: without the
+ * store-owned keys and without `updated`, since the planners add them, with
+ * the counts of the note «N sezioni riconosciute, M finite in «Altro»»
+ * (`archui.js:251`). An `archive` is a JSON file with a `chars` list
+ * (`archui.js:58`), returned untouched for the import planner, which validates it.
+ */
+export type ParsedCharacterFile =
+  | { readonly kind: 'error'; readonly error: string }
+  | {
+      readonly kind: 'character';
+      readonly input: CharacterInput;
+      /** Headings filed under one of the ten known sections (`SECTION_SYNONYMS`). */
+      readonly recognisedSections: number;
+      /** Headings whose text went to «Altro». */
+      readonly otherSections: number;
+    }
+  | { readonly kind: 'archive'; readonly file: unknown };
 
 /**
  * Heading synonyms in the legacy match order: the first pattern that fits a
@@ -239,17 +246,13 @@ function completeDraft(state: ReaderState, fileName: string): void {
   if (!draft.short) draft.short = derivedShort(sections);
 }
 
-/** A result with no content: a blank sheet named after the file. */
-function emptyResult(fileName: string): ParsedCharacterFile {
-  const character = {
-    ...blankCharacterInput(),
-    name: fileNameWithoutExtension(fileName) || 'Senza nome',
-  };
-  return { character, recognisedSections: 0, toOther: false };
+function refused(error: string): ParsedCharacterFile {
+  return { kind: 'error', error };
 }
 
-function refused(fileName: string, error: string): ParsedCharacterFile {
-  return { ...emptyResult(fileName), error };
+/** A sheet with no sections: the JSON branch gives no counts. */
+function jsonSheet(input: CharacterInput): ParsedCharacterFile {
+  return { kind: 'character', input, recognisedSections: 0, otherSections: 0 };
 }
 
 /** Parses JSON text, or returns undefined when it is not JSON: a syntax error is the only failure `JSON.parse` has. */
@@ -270,19 +273,18 @@ function tryParseJson(text: string): { value: unknown } | undefined {
  * untrusted. No size cap: the legacy checks it only after the Markdown branch
  * (`archui.js:82`), and an archive is legitimately large.
  */
-function parseJsonFile(text: string, fileName: string): ParsedCharacterFile {
+function parseJsonFile(text: string): ParsedCharacterFile {
   const parsed = tryParseJson(text);
-  if (parsed === undefined) return refused(fileName, INVALID_JSON_MESSAGE);
+  if (parsed === undefined) return refused(INVALID_JSON_MESSAGE);
   const file = parsed.value as Record<string, unknown> | null;
-  if (file !== null && Array.isArray(file.chars))
-    return { ...emptyResult(fileName), archive: file };
-  if (!file?.name) return refused(fileName, JSON_WITHOUT_NAME_MESSAGE);
+  if (file !== null && Array.isArray(file.chars)) return { kind: 'archive', file };
+  if (!file?.name) return refused(JSON_WITHOUT_NAME_MESSAGE);
   const checked = CharacterInputSchema.safeParse({
     ...blankCharacterInput(),
     ...omitKeys(file, JSON_DROPPED_KEYS),
   });
-  if (!checked.success) return refused(fileName, INVALID_JSON_MESSAGE);
-  return { character: checked.data, recognisedSections: 0, toOther: false };
+  if (!checked.success) return refused(INVALID_JSON_MESSAGE);
+  return jsonSheet(checked.data);
 }
 
 /**
@@ -293,11 +295,15 @@ function parseJsonFile(text: string, fileName: string): ParsedCharacterFile {
  * gives it an id, a version and a date. A `.json` file, or a text that starts
  * with `{`, takes the JSON branch (`parseJsonFile`).
  */
-export function parseCharacterFile(text: string, fileName: string): ParsedCharacterFile {
-  if (/\.json$/i.test(fileName) || JSON_TEXT.test(text)) return parseJsonFile(text, fileName);
-  if (text.length > MAX_FILE_LENGTH) return refused(fileName, FILE_TOO_LONG_MESSAGE);
+export function parseCharacterFile(
+  text: string,
+  fileName: string,
+  clock: Clock,
+): ParsedCharacterFile {
+  if (/\.json$/i.test(fileName) || JSON_TEXT.test(text)) return parseJsonFile(text);
+  if (text.length > MAX_FILE_LENGTH) return refused(FILE_TOO_LONG_MESSAGE);
   const state: ReaderState = {
-    draft: blankCharacterInput(),
+    draft: { ...blankCharacterInput(), origin: importedOrigin(fileName, clock) },
     outline: [],
     bodies: {},
     buffer: [],
@@ -306,9 +312,11 @@ export function parseCharacterFile(text: string, fileName: string): ParsedCharac
   for (const line of text.replace(/\r/g, '').split('\n')) readLine(state, line);
   flushSection(state);
   completeDraft(state, fileName);
+  const otherSections = state.outline.filter(({ key }) => key === OTHER_SECTION).length;
   return {
-    character: state.draft,
-    recognisedSections: state.outline.filter(({ key }) => key !== OTHER_SECTION).length,
-    toOther: state.outline.some(({ key }) => key === OTHER_SECTION),
+    kind: 'character',
+    input: state.draft,
+    recognisedSections: state.outline.length - otherSections,
+    otherSections,
   };
 }

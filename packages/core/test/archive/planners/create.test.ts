@@ -31,6 +31,7 @@ describe('planCreate (archui.js:297-307, P-03)', () => {
           revision: 1,
           updated: NOW_ISO,
           era: 'presente',
+          origin: { label: "creato nell'archivio · 27/11" },
           short: '',
           sections: {},
           secrets: [],
@@ -49,6 +50,14 @@ describe('planCreate (archui.js:297-307, P-03)', () => {
       OPTIONS,
     );
     expect(batch[0]).toMatchObject({ character: { name: 'Ada', age: 95, secrets: ['a'] } });
+  });
+});
+
+describe('planCreate, the origin label (archui.js:62, 205)', () => {
+  it('keeps the origin a sheet read from a file already has', () => {
+    const origin = { label: 'importato da ada.md · 26/11' };
+    const { batch } = planCreate([], input({ origin }), makeDeps(), OPTIONS);
+    expect(batch[0]).toMatchObject({ character: { origin } });
   });
 });
 

@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { CharacterInput } from '../../src/archive/character';
 import { characterToMarkdown } from '../../src/archive/markdown';
-import { parseCharacterFile } from '../../src/archive/parse';
+import { parseSheet } from './parseHelpers';
 
 const FIXTURES = new URL('../fixtures/characters/presente/', import.meta.url);
 
@@ -74,14 +74,22 @@ describe('characterToMarkdown (archui.js:127-136)', () => {
   });
 
   it('omits the relations when it cannot name their targets', () => {
-    expect(characterToMarkdown(ADA, { withSecrets: true })).not.toContain('## Rapporti');
+    expect(characterToMarkdown(ADA, { withSecrets: true, nameOf: () => undefined })).not.toContain(
+      '## Rapporti',
+    );
   });
 
   it('writes Epoca for novel characters and Ruolo and Stile for future ones only', () => {
-    const novel = characterToMarkdown({ ...ADA, era: 'romanzo' }, { withSecrets: false });
+    const novel = characterToMarkdown(
+      { ...ADA, era: 'romanzo' },
+      { withSecrets: false, nameOf: () => undefined },
+    );
     expect(novel).toContain('Epoca: romanzo');
     expect(novel).not.toContain('Ruolo preferito');
-    const present = characterToMarkdown({ ...ADA, era: 'presente' }, { withSecrets: false });
+    const present = characterToMarkdown(
+      { ...ADA, era: 'presente' },
+      { withSecrets: false, nameOf: () => undefined },
+    );
     expect(present).not.toContain('Epoca');
     expect(present).not.toContain('Stile');
   });
@@ -95,10 +103,10 @@ describe('the markdown round trip of the fixtures', () => {
   it.each(readdirSync(FIXTURES).filter((name) => name.endsWith('.md')))(
     '%s survives parse, serialize with secrets, parse',
     (file) => {
-      const first = parseCharacterFile(readFileSync(new URL(file, FIXTURES), 'utf8'), file);
-      const text = characterToMarkdown(first.character, { withSecrets: true });
-      const second = parseCharacterFile(text, file);
-      expect(pick(second.character, REPRESENTED)).toEqual(pick(first.character, REPRESENTED));
+      const first = parseSheet(readFileSync(new URL(file, FIXTURES), 'utf8'), file);
+      const text = characterToMarkdown(first.input, { withSecrets: true, nameOf: () => undefined });
+      const second = parseSheet(text, file);
+      expect(pick(second.input, REPRESENTED)).toEqual(pick(first.input, REPRESENTED));
     },
   );
 });
@@ -106,7 +114,7 @@ describe('the markdown round trip of the fixtures', () => {
 describe('the markdown round trip of the era keys', () => {
   it('keeps the era, the role and the style of a future character', () => {
     const text = characterToMarkdown(ADA, { withSecrets: true, nameOf });
-    const back = parseCharacterFile(text, 'ada.md').character;
+    const back = parseSheet(text, 'ada.md').input;
     expect(pick(back, ['era', 'role', 'style'])).toEqual({
       era: 'futuro',
       role: 'capitano',
@@ -115,13 +123,19 @@ describe('the markdown round trip of the era keys', () => {
   });
 
   it('keeps the era of a novel character', () => {
-    const text = characterToMarkdown({ ...ADA, era: 'romanzo' }, { withSecrets: true });
-    expect(parseCharacterFile(text, 'ada.md').character.era).toBe('romanzo');
+    const text = characterToMarkdown(
+      { ...ADA, era: 'romanzo' },
+      { withSecrets: true, nameOf: () => undefined },
+    );
+    expect(parseSheet(text, 'ada.md').input.era).toBe('romanzo');
   });
 
   it('brings a novel character aged 120 back aged 95, the legacy defect of archui.js:70 (FR-014, AM2-06)', () => {
-    const text = characterToMarkdown({ ...ADA, era: 'romanzo', age: 120 }, { withSecrets: true });
+    const text = characterToMarkdown(
+      { ...ADA, era: 'romanzo', age: 120 },
+      { withSecrets: true, nameOf: () => undefined },
+    );
     expect(text).toContain('Età: 120');
-    expect(parseCharacterFile(text, 'ada.md').character.age).toBe(95);
+    expect(parseSheet(text, 'ada.md').input.age).toBe(95);
   });
 });

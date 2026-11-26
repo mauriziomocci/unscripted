@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { characterTemplate } from '../../src/archive/markdown';
-import { parseCharacterFile } from '../../src/archive/parse';
+import { parseSheet } from './parseHelpers';
 
 /** `archTemplate('presente')`, `archui.js:89-126`, as the legacy builds it. */
 const PRESENT_TEMPLATE = `# Nome e cognome
@@ -76,10 +76,10 @@ describe('characterTemplate (archui.js:89-126, 210)', () => {
   it.each(['presente', 'futuro', 'romanzo'] as const)(
     'reads back as a sheet with every section, era %s',
     (era) => {
-      const parsed = parseCharacterFile(characterTemplate(era).text, 'modello.md');
-      expect(parsed.character.name).toBe('Nome e cognome');
+      const parsed = parseSheet(characterTemplate(era).text, 'modello.md');
+      expect(parsed.input.name).toBe('Nome e cognome');
       expect(parsed.recognisedSections).toBe(10);
-      expect(parsed.toOther).toBe(false);
+      expect(parsed.otherSections).toBe(0);
     },
   );
 });

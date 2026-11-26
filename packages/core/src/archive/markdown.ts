@@ -32,7 +32,7 @@ export interface MarkdownOptions {
    * holds names (`archui.js:133`); a relation whose target has no name is left
    * out, as the legacy does for a character no longer in the archive.
    */
-  readonly nameOf?: (id: string) => string | undefined;
+  readonly nameOf: (id: string) => string | undefined;
 }
 
 function headerLines(character: CharacterInput): string[] {
@@ -67,7 +67,7 @@ function listBlock(title: string, items: readonly string[] | undefined): string[
 
 function relationLines(character: CharacterInput, nameOf: MarkdownOptions['nameOf']): string[] {
   return (character.relations ?? []).flatMap((relation) => {
-    const name = nameOf?.(relation.to);
+    const name = nameOf(relation.to);
     if (name === undefined) return [];
     const view = relation.view ? `, "${relation.view}"` : '';
     return [`- ${name}: ${relation.type}, ${String(relation.int || 0)}${view}`];
