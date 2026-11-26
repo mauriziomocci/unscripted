@@ -1,0 +1,16 @@
+{
+  "name": "unscripted",
+  "private": true,
+  "packageManager": "pnpm@12.20.0",
+  "engines": {
+    "node": ">=22 <23"
+  },
+  "scripts": {
+    "lint": "echo 'lint: not yet wired' && exit 1",
+    "format:check": "echo 'format:check: not yet wired' && exit 1",
+    "typecheck": "echo 'typecheck: not yet wired' && exit 1",
+    "test": "echo 'test: not yet wired' && exit 1",
+    "golden:record": "echo 'golden:record: not yet wired' && exit 1",
+    "golden:check": "echo 'golden:check: not yet wired' && exit 1"
+  }
+}
