@@ -1,11 +1,26 @@
 {
   "files": [],
   "references": [
-    { "path": "packages/core" },
-    { "path": "packages/ui" },
-    { "path": "apps/web" },
-    { "path": "apps/server" },
-    { "path": "apps/artifact" },
-    { "path": "tools/golden" }
+    {
+      "path": "packages/core"
+    },
+    {
+      "path": "packages/ui"
+    },
+    {
+      "path": "apps/web"
+    },
+    {
+      "path": "apps/server"
+    },
+    {
+      "path": "apps/artifact"
+    },
+    {
+      "path": "tools/golden"
+    },
+    {
+      "path": "tsconfig.tooling.json"
+    }
   ]
 }
