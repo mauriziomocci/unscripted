@@ -157,7 +157,7 @@ Rejected on the burden of proof (no requirement needs them): `@fastify/rate-limi
 - **Decision.** `tools/golden` runs in Node 22 with `node:vm`, one fresh context per run; the code comes from the FR-081 builder's output (no second assembler). It installs, before SIM runs: `window.ISLAND_RANDOM = true`, a `Math.random` replacement from core's seeded `Rng`, a storage shim holding `isola-island-seed` and `isola-island-size` (`sim.js:28-31`), and an in-house fake clock (`Date.now`, `performance.now`, `setTimeout`, `setInterval`, `clearTimeout`, `clearInterval`) that fires due timers one at a time in due order with a full microtask drain after each (FR-095 tick order). The terrain functions come from `scene.js:50-75` through an `acorn` AST, pinned by the vendored file's hash (FR-092). The two `SAMPLE.json` sites (`engine.js:19, 21`) receive `kind` through an in-memory string transform that must match exactly 2 sites (FR-093). The golden refuses to run when `process.versions.node`'s major differs from the header's (FR-097).
 - **Rationale.** The tick order is a requirement written step by step in FR-095, recorded in the header; an in-house clock of a few dozen lines makes that order exact and inspectable. The `Rng` algorithm is the legacy `rngFrom`, mulberry32 (`sim.js:5-11`), so FR-012's "same algorithm the golden harness uses" holds by construction: the harness imports it from core.
 - **Alternatives.** `@sinonjs/fake-timers`: a proven library, but its `tickAsync` ordering of microtasks between timers is not the ordering FR-095 states, and proving it equal would cost more than writing the clock (UNVERIFIED claim about sinon, so the cheaper path is the one that can be proven by its own tests). A JSDOM page: FR-090 forbids a DOM.
-- **Determinism risk.** SC-004 requires arm64 goldens to pass on x64. `Math.sin`, `Math.exp` and friends are not guaranteed bit-identical across V8 builds; this is exactly what SC-004 measures, and it waits for CI (Q-26-1, R-21).
+- **Determinism risk.** SC-004 requires arm64 goldens to pass on x64. `Math.sin`, `Math.exp` and friends are not guaranteed bit-identical across V8 builds; this is exactly what SC-004 measures, and it runs in CI (R-21).
 - **Round 2 (reviews M2, M3).** Three determinism inputs that FR-095 states and R-13 left out: the process runs with `TZ=UTC` (`archSyncGame` formats with `toLocaleDateString('it-IT')`, `archui.js:143`); the first `archSyncGame` fires 3 s of fake time after `newGame`; the DOM-free archive functions of `archui.js:142-159, 183-187` are extracted by `acorn` from the vendored file and pinned by the hash of their source slices, like the terrain. The fake clock also replaces the argument-less `Date` constructor in the context (a subclass whose zero-argument form reads the fake `now`), and a test asserts that the digested state holds no string produced by the real clock. On A-02: `tools/golden` imports only `core`; it reads `apps/artifact/dist/index.html` from disk, the `golden:*` scripts run the artifact build first, and the header records that file's md5. It never imports the builder.
 
 ### R-14 Legacy builder (FR-081, FR-082, FR-084)
@@ -214,7 +214,7 @@ Rejected on the burden of proof (no requirement needs them): `@fastify/rate-limi
 - **Rationale.** FR-045 makes `llm_calls` the single source of both limits. In-memory semaphores are correct for one server process; two processes exist only during a start-up race, which the start-up advisory lock serialises.
 - **Known limit.** With two long-running server processes the concurrency caps would double; v1 runs one (4.6). Recorded in `docs/architecture.md`.
 
-### R-21 CI (FR-103) and the Q-26-1 and Q-17-2 holds
+### R-21 CI (FR-103); Q-26-1 and Q-17-2 closed by D-26-8 (provisional, Trinity, by the owner's delegation D-26-7)
 
 - **Decision.** `.github/workflows/ci.yml` runs on push and pull request:
   - install, with pnpm 12.20.0 and Node pinned to 22.23.5, the exact patch of the images, so that SC-004 compares the same V8 on both architectures;
@@ -229,12 +229,11 @@ Rejected on the burden of proof (no requirement needs them): `@fastify/rate-limi
   - the artifact smoke (Playwright Chromium).
 
   `.github/workflows/nightly.yml` runs the full end-to-end suite on the web app and the artifact. Actions are pinned by commit SHA, read at task time (U-11).
-- **Holds.** Q-26-1 blocks `qualita.js` (4.9). Q-17-2 blocks everything carrying the 42 future sheets or the 3 file-only present sheets: `archpack-futuro.js`, the future seed content and the future and file-only FR-015 fixtures. Neither held file can be left out of the byte-identical build. So vendoring happens in two parts:
-  - V1, on the WI-1 branch: every FR-080 file that carries no held content.
-  - B8b, on the WI-1 branch: the builder, the golden harness modules and the smoke spec, with synthetic tests and the real V1 files where V1 suffices. `scene.js` and `archui.js` are in V1, so the hash-pinned terrain and archive-slice extractions run on the real files in pushed CI.
-  - The local branch `wi1-local-q26-1` (no upstream, never pushed) is created from the last commit of B8b. It starts with V2, `qualita.js` and `archpack-futuro.js`, followed by everything that needs them: byte identity, the `build.py` comparison, the size check on the real page, the recorded goldens, the smoke run and the future content.
-
-  The CI jobs that need the held files are added on the local branch. This extends 4.9's interim to Q-17-2, as 4.9's own Q-17-2 line requires (OI-2).
+- **No holds (resolved by D-26-8 (provisional, Trinity, by the owner's delegation D-26-7)).** Q-26-1: `qualita.js` is vendored with the names in the comment at line 26 replaced by invented ones; Q-17-2: the 45 sheets are published as they are. Vendoring is therefore one step on the pushable branch, with the V1 and V2 split kept only as an ordering of the work:
+  - V1: every FR-080 file but `qualita.js` and `archpack-futuro.js`.
+  - B8b: the builder, the golden harness modules and the smoke spec, with synthetic tests and the real V1 files where V1 suffices; `scene.js` and `archui.js` are in V1, so the hash-pinned terrain and archive-slice extractions run on the real files in CI.
+  - V2: `qualita.js` (redacted; a test over a deny-list of hashes in a fixture proves no colleague first name remains), `archpack-futuro.js`, then byte identity of the build of the vendored sources, the `build.py` comparison, the size check on the real page, the recorded goldens, the smoke run and the future content. A one-time local diff check on the Mac against page `299a` proves the only difference is that comment line; it is recorded in the WI-1 notes.
+  CI runs on all of this. No local branch exists.
 
 ### R-22 Prices and configuration (FR-030, FR-032)
 
@@ -297,7 +296,7 @@ Rewritten in round 2 (review M10). The first version counted as "kills" five cho
 5. The current character as the newest row of `character_versions`; `games.environment` as a PostgreSQL enum.
 6. Only the four tables WI-1 writes.
 7. A hand-written TypeBox character schema.
-8. One vendoring commit, with only `qualita.js` held back.
+8. One vendoring commit, with only `qualita.js` held back (superseded by D-26-8: one commit, `qualita.js` redacted).
 9. `@sinonjs/fake-timers` in the golden harness.
 10. `llm_calls.game_id` as a foreign key to `games`.
 
@@ -308,7 +307,7 @@ Rewritten in round 2 (review M10). The first version counted as "kills" five cho
 - item 4 (rate limit): FR-045 makes `llm_calls` the source of the limit;
 - item 5 (enum half): 2.5 and AM2-09 already favour `text` with `CHECK`;
 - item 6: FR-024 says "all tables of 2.5", and AM2-09 says the WI-1 migrations create `games.environment`;
-- item 8: 4.9 already says nothing carrying the Q-17-2 sheets is pushed;
+- item 8: superseded by D-26-8 (Q-17-2 closed, sheets published as they are);
 - item 10: FR-028 accepts an unknown `gameId`.
 
 **Real design calls, where the review changed the choice:**
@@ -359,7 +358,7 @@ Re-checking what the round-2 fixes introduced:
 | U-9 | Fastify 5.12 `bodyLimit` route option and its error code (R-06) | 413 not in the envelope | security task, SC-006 body test |
 | U-10 | Image digests and their age; Playwright image digest and its Node major (must be 22 for `engine-strict`, R-02) (R-19) | FR-047 pin not reproducible | Docker task, digests read that day and recorded |
 | U-11 | GitHub Actions versions and SHAs (R-21) | CI pin not reproducible | CI task |
-| U-12 | Bit-identical V8 maths between arm64 and x64 (R-13) | SC-004 fails | SC-004 itself, waits for CI (Q-26-1) |
+| U-12 | Bit-identical V8 maths between arm64 and x64 (R-13) | SC-004 fails | SC-004 itself, runs in CI |
 
 ## Review responses (round 1)
 
@@ -377,7 +376,7 @@ Every finding is applied; none is rejected. "Where" names the file and section t
 | I8 no Python in the image | `python3` in the dev stage; spawn env keeps `PATH` | R-01, plan Technical Context, quickstart |
 | I9 suite crosses apps | `HttpStore` suite in `apps/web` over HTTP | R-15 |
 | I10 missing gate measurements | `jscpd` and the catch-all selector, proven red | R-05, plan guards |
-| M1 hold boundary too early | builder, harness modules, smoke spec before the held vendoring | R-21, plan branch strategy |
+| M1 hold boundary too early | superseded by D-26-8: no hold; builder, harness modules and smoke spec are in B8b anyway | R-21, plan branch strategy |
 | M2 golden inputs | `TZ=UTC`, 3 s phase, archive slices hash-pinned, zero-argument `Date` faked | R-13 |
 | M3 golden and A-02 | reads `dist/index.html` from disk, records its md5 | R-13 |
 | M4 framework errors, Ajv coercion | mapped to `invalid_request`; `coerceTypes: false` | R-06, openapi info |
@@ -416,7 +415,7 @@ All nine findings are applied. In R-05, R-06, R-10, R-15, R-20 and R-21 I rewrot
 | N1 Ajv strips unknown keys | `removeAdditional: false` next to `coerceTypes: false`; option objects closed, records open; one misspelt-option test per write route and for `POST /api/llm` | R-06, openapi `info` |
 | N2 generator cannot reproduce `archGenPrompt` | signature takes `{ role, sex, tone, style, trait }` and the crew; the asset is a template with placeholders; the vendored `archGenPrompt` and `archGenParse` are the oracle over a matrix | R-25, core-ports.d.ts, plan FR-072 row |
 | N3 stale Decision bullets | R-05, R-06, R-10, R-15, R-20, R-21 rewritten; the superseded wording appears only here and in round 1's table | research.md |
-| N4 local branch base | created from the last commit of B8b; B8b uses the real V1 `scene.js` and `archui.js` for the hash-pinned extractions, with synthetic sources only for the failure paths | R-21, plan branch strategy |
+| N4 branch base | no local branch (D-26-8); B8b uses the real V1 `scene.js` and `archui.js` for the hash-pinned extractions, with synthetic sources only for the failure paths | R-21, plan branch strategy |
 | N5 guard bypasses | catch selector limited to the catch's own body; selectors for `.catch(handler)` without a rethrow and for `.then(_, onRejected)`; the exemption script also checks `jscpd:ignore-start`; each proven red | R-05, plan guards |
 | N6 `Omit` over an index signature | `CharacterInput` and `CharacterSnapshot` are inferred from `CharacterSchema.omit(...)`, which keeps the named keys and the catch-all | core-ports.d.ts |
 | N7 isolation level | admission at `READ COMMITTED`, stated on the transaction; concurrency test on the production pool settings | R-20 |

@@ -82,6 +82,6 @@ docker compose -f docker-compose.production.yml up --build -d
 
 Built images, no source mounts, nginx-unprivileged serving the build and proxying `/api` with the token, the same health checks and `127.0.0.1` bindings.
 
-## Branches while Q-26-1 and Q-17-2 are open
+## Branches
 
-The WI-1 branch `20261126-130502-wi1-foundation` is pushable up to the commit before the vendoring of `qualita.js` and `archpack-futuro.js`. That vendoring and every later commit live on the local branch `wi1-local-q26-1`, which has no upstream and is never pushed (section 4.9; plan.md, branch strategy). On that branch CI does not run, so the CI-only evidence (SC-004 on the x64 runner, the FR-103 jobs) waits for the owner's answers.
+All WI-1 work is committed on `20261126-130502-wi1-foundation`, which is pushable: decision D-26-8 closed Q-26-1 (`qualita.js` vendored with the names in its comment redacted) and Q-17-2 (the 45 sheets published as they are), so there is no held work and CI runs on every push.

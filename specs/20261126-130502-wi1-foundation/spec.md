@@ -18,6 +18,6 @@ The amendments are applied in that file: `amendment-2026-11-17.md` (Amendment 1)
 
 ## Open items that touch WI-1
 
-- **Q-26-1** (reserved to the owner): the vendoring of `qualita.js` waits for it. Commits from that vendoring on stay on the local branch `wi1-local-q26-1`, with no upstream, as section 4.9 of the umbrella spec says.
-- **Q-17-2** (reserved to the owner): the publication of the 45 new character sheets, which FR-015's fixtures need.
+- **Q-26-1** (closed by D-26-8 (provisional, Trinity, by the owner's delegation D-26-7)): `qualita.js` is vendored with the names in its comment at line 26 replaced by invented ones; everything goes on the pushable branch.
+- **Q-17-2** (closed by D-26-8 (provisional, Trinity, by the owner's delegation D-26-7)): the 45 new character sheets are published as they are, which FR-015's fixtures need.
 - WI-1 closure, the final review and the merge follow the umbrella spec's sections 4.9 and the constitution's workflow.
