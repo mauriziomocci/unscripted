@@ -202,7 +202,7 @@ export interface ArchiveFileV1 { readonly schema: 'archivio/1'; readonly exporte
 export interface ArchiveDeps { readonly clock: Clock; readonly newId: () => string; }
 /** The single applier of the planners (R-18): server routes and LocalArchive both use it. */
 export declare class StoreArchive implements ArchiveClient {
-  constructor(store: CharacterStore, deps: ArchiveDeps);
+  constructor(store: CharacterStore, deps: ArchiveDeps & { readonly packs?: readonly (readonly Character[])[] }); // packs: what addPack offers; none by default
   list(): Promise<readonly Character[]>;
   get(id: string): Promise<Character | null>;
   versions(id: string): Promise<readonly CharacterVersion[]>;
