@@ -3,6 +3,7 @@ import boundaries from 'eslint-plugin-boundaries';
 import { importX } from 'eslint-plugin-import-x';
 import { defineConfig } from 'eslint/config';
 import tseslint from 'typescript-eslint';
+import noSwallowedError from './eslint-rules/no-swallowed-error.ts';
 
 /** The vendored reference code may be read only by the builder and the golden harness. */
 const LEGACY_IMPORT = {
@@ -188,5 +189,11 @@ export default defineConfig(
       'no-empty': 'error',
       '@typescript-eslint/no-floating-promises': 'error',
     },
+  },
+  {
+    // Callers decide by error type: a handler that does not rethrow hides the failure (R-05).
+    files: ['**/*.{ts,tsx}'],
+    plugins: { local: { rules: { 'no-swallowed-error': noSwallowedError } } },
+    rules: { 'local/no-swallowed-error': 'error' },
   },
 );

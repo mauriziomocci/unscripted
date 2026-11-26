@@ -9,6 +9,7 @@ const PROJECT_ROOTS = [
   'apps/artifact',
   'tools/golden',
   'scripts',
+  'eslint-rules',
 ];
 
 /**
