@@ -178,3 +178,62 @@ Le aggiunte al contratto API previste dal WI-2 in poi (sezione 2.9 della spec). 
   - Q-17-2: la pubblicazione delle 45 schede nuove;
   - le aggiunte al contratto API (sezione 2.9).
 - **Stato:** approvata in via provvisoria, in attesa di conferma.
+
+## 2026-11-26
+
+### D-26-0: totale autonomia per la giornata
+
+- **Autonomia (in chat, 11:55):** «Ricomincia in totale autonomia, io non sarò disponibile oggi». La forma è una finestra, perché `pe.autonomy` non è impostato.
+  - Perimetro: il passo successivo del port v1 dopo l'emendamento 1, cioè il plan del WI-1 su un branch Spec Kit creato dall'ombrello, la sua revisione avversariale, i task e, se il tempo basta, l'inizio dell'implementazione con l'emendamento 1.1.0 della costituzione come primo commit.
+  - Inizio: 11:55. Fine: 21:00, la fine dell'orario d'ufficio, perché il proprietario non ha indicato un orario. Nessun lavoro notturno.
+  - Aperture: `spec`, `schema`, `design`, `publish`. L'apertura `contract` resta chiusa.
+- **Lettura della frase:** la considero il via libera chiesto il 17 novembre per passare al plan del WI-1. Non la considero una risposta a Q-17-1, che il proprietario ha detto di voler discutere («Ne parliamo»): il WI-1 non dipende da Q-17-1, perché la Venture arriva nel WI-7.
+- **Restano al proprietario:** Q-17-1 e Q-17-2, perché cambiano o allargano ciò che ha chiesto; le aggiunte al contratto API; i merge in `develop` e `main`; le modifiche ai file di istruzioni e alla memoria.
+- **Budget:** consumo settimanale 41% alle 11:55, reset il 27 novembre alle 06:00. Tetto di oggi: (85% − 41%) / 1 giorno = 44 punti, cioè fino all'85%; la riserva del 15% resta intatta.
+- **Stato:** registrato.
+
+### D-26-1: il riferimento è cambiato, prima del plan serve l'emendamento 2
+
+- **Chi ha deciso:** il coordinatore, nel ruolo di Domenico per la scelta di cosa fare prima; Matteo da solo per il modo tecnico di fissare il riferimento.
+- **Fatti verificati alle 12:20:**
+  - la cartella `unscripted-reference/2026-11-17/` è stata aggiornata sul posto dopo la mia verifica del 17: file datati 17 novembre 15:24 e 16:47 e 23 novembre 13:52;
+  - `talk.js` ha ora md5 `90845a15d9f1eafb8f0b467305a74298`, non più `b66bdbd7dd5c6340737c2da7426e0f46` scritto nella spec;
+  - ci sono file nuovi: `qualita.js`, `romanzo.js`, `romanzoui.js`, `tests/quality.test.js`, `tests/romanzo.test.js`, `tools/bench_books.js`;
+  - `python3 build.py x` produce oggi `live.html` di 1.529.486 byte con md5 `2374c745827c2b2e57fd6dd493d32e03`, diversa da tutte le pagine di `published/`, la più recente delle quali è `1794931182-d6d3` del 17 alle 17:01;
+  - i tre test (`venture`, `romanzo`, `quality`) stampano `ALL OK`;
+  - il `HANDOFF.md` del riferimento ha una sezione 7 sul nuovo ambiente «Il romanzo», con un WI-8 proposto dal proprietario; la copia nel repository ha invece l'aggiunta del 23 novembre sulla qualità della prosa.
+- **Decisione:** il plan del WI-1 aspetta un emendamento 2 della spec, con la stessa procedura del primo (tre passi, FAQ, revisione avversariale fino a CONVERGED). Il motivo è che FR-011 deve contenere tutti i tipi di chiamata prima che il contratto si congeli con il merge del WI-1, e che le citazioni e le checksum della spec puntano a uno stato che non esiste più.
+- **Modo tecnico (Matteo):** non scrivo nulla nella cartella di riferimento, che il proprietario vuole intatta. Fisso lo stato con un manifesto di checksum di ogni file sorgente, salvato nella cartella della spec. L'oracolo è la pagina pubblicata `esperimento-sociale-1795438262-299a.html` del 23 novembre, che il proprietario ha salvato nella cartella del diario dell'artifact (`Diario/docs/esperimento-sociale/2026-11-23/artefatto/`): ha md5 `2374c745827c2b2e57fd6dd493d32e03` e 1.529.486 byte, identica byte per byte a ciò che `python3 build.py` produce oggi dai sorgenti.
+- **Posizioni:** fare subito il plan del WI-1 costerebbe meno oggi, ma porterebbe a un plan su un enum incompleto e su citazioni sbagliate, da rifare.
+- **I cinque costi:**
+  - token: circa 8-12 punti della settimana;
+  - tempo: due o tre ore, quindi il plan del WI-1 forse slitta a domani;
+  - qualità: il plan nasce su un riferimento verificato;
+  - modo di lavorare: lo stesso schema del 17;
+  - giocatore: il romanzo e la qualità della prosa entrano nella v1, come chiede «deve entrare tutto».
+- **Stato:** provvisoria, in attesa di conferma.
+
+### D-26-2: emendamento 2 approvato in via provvisoria
+
+- **Chi ha deciso:** la trinità. Il coordinatore ha fatto da Domenico; il giudizio sulle prove viene dal revisore avversariale, un agente indipendente con mandato ostile. Riccardo non è entrato sulle interfacce, che l'emendamento riporta dall'artifact senza progettarne di nuove; sull'API il punto delicato, il campo per la scelta del modello, è uscito dal WI-1 proprio per il motivo che una revisione di esperienza dell'API avrebbe sollevato (un nome ambiguo e valori legati al fornitore).
+- **Apertura usata:** `spec`, della finestra D-26-0; per i quattro valori di `games.environment` anche `schema`.
+- **Il ciclo:**
+  - giro 1: `VERDICT: NOT CONVERGED`, `FINDINGS: 1/8/12`, `COVERAGE: full`;
+  - giro 2: `VERDICT: NOT CONVERGED`, `FINDINGS: 0/1/10`, `COVERAGE: full`;
+  - giro di verifica, che chiude il ciclo: `VERDICT: CONVERGED`, `FINDINGS: 0/0/2`, `COVERAGE: full`. I due minori sono stati corretti subito dopo.
+- **Cosa è stato approvato:** `specs/20261113-111328-v1-port/amendment-2026-11-26.md`, voci da AM2-01 ad AM2-14, e il manifesto `reference-2026-11-23.md5`. Le scelte principali:
+  - il riferimento è lo stato del 23 novembre, fissato dal manifesto; l'oracolo è la pagina pubblicata `1795438262-299a`;
+  - il WI-8 Romanzo si colloca dopo il WI-5;
+  - i 19 tipi di chiamata del romanzo entrano subito nell'enum, con i nomi italiani del codice;
+  - l'archivio del WI-1 riceve la sezione «📖 Romanzo»;
+  - nessun campo nuovo nel contratto del WI-1 per la scelta del modello: diventa un'aggiunta pianificata del WI-8;
+  - il difetto dell'età a 95 si porta com'è ed è tracciato per il WI-6;
+  - la corsa critica di `llm.js:48` si corregge nel core, con riga di parità e test.
+- **I cinque costi:**
+  - token: circa 10 punti della settimana fra inventario, progetto e tre giri di revisione;
+  - tempo: circa un'ora e mezza;
+  - qualità: 3 giri e 35 rilievi corretti prima di scrivere codice, fra cui un errore di contratto che sarebbe stato permanente;
+  - modo di lavorare: lo stesso schema del 17, con agenti in parallelo;
+  - giocatore: il romanzo entra nella v1, con lo strato di qualità della prosa.
+- **Restano al proprietario:** Q-26-1 (nomi di persone reali in `qualita.js:26` e nei test di qualità), Q-17-1, Q-17-2, le aggiunte pianificate al contratto (sezione 2.9, ora con tre righe nuove).
+- **Stato:** approvata in via provvisoria, in attesa di conferma.
