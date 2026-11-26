@@ -15,12 +15,6 @@ supportedArchitectures:
   cpu: [arm64, x64]
   libc: [musl, glibc]
 
-# Dependencies allowed to run their build script (pnpm 12 fails the install on
-# any other one, ERR_PNPM_IGNORED_BUILDS). esbuild is reached through tsx and
-# drizzle-kit and only links its platform binary.
-allowBuilds:
-  esbuild: true
-
 # One version per dependency across workspaces (research "Pinned versions",
 # registry read of 2026-11-26, aged cutoff 2026-11-12). @types/node is the
 # newest 22.x published on or before the cutoff; it is used by server, tools
