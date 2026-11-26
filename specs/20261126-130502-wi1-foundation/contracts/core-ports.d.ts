@@ -122,6 +122,10 @@ export interface Character {
 export declare const CharacterSchema: unknown;          // zod looseObject at every level (data-model.md)
 export declare const CharacterInputSchema: unknown;
 export declare const CharacterSnapshotSchema: unknown;
+/** Request-side JSON Schema (draft-07, io 'input') of the three records, computed once in core from private unguarded shapes; routes and documents use these, never a shape. */
+export declare const CHARACTER_JSON_SCHEMA: JsonSchema;
+export declare const CHARACTER_INPUT_JSON_SCHEMA: JsonSchema;
+export declare const CHARACTER_SNAPSHOT_JSON_SCHEMA: JsonSchema;
 export interface CharacterInput {
   readonly schema: 'personaggio/1';
   readonly updated?: string;   // set by the planners from the Clock on every save (archui.js:38)
@@ -287,8 +291,10 @@ export interface BackoffSchedule {
   readonly maxInFlight?: number;  // island 2 (engine.js:13), Venture 2
 }
 export declare const BACKOFF_SCHEDULES: Readonly<Record<BackoffScheduleName, BackoffSchedule>>;
-/** Wait in ms before the retry number `step` (1-based), or null when the schedule is exhausted. */
-export declare function backoffWaitMs(schedule: BackoffSchedule, step: number): number | null;
+/** Whether a call that has made `attempt` retries so far (0 on its first failure) may retry again; RangeError on a negative or non-integer attempt. */
+export declare function mayRetry(schedule: BackoffSchedule, attempt: number): boolean;
+/** Wait in ms before the retry at `step` (1-based), held at `maxStep`; never "stop" (that is mayRetry's job); RangeError on a step below 1. */
+export declare function backoffWaitMs(schedule: BackoffSchedule, step: number): number;
 
 export interface BudgetGovernor {
   /** Pass-through by default (S-09), so goldens equal the legacy. */

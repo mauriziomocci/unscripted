@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { JsonSchema } from '../llm/request';
 import { hasPrototypeKey } from './prototypeKeys';
 
 /** The eight free-text sections of a character sheet, in the legacy order; every one is optional and uncapped. */
@@ -46,7 +47,7 @@ const VentureSchema = z.looseObject({
  * keys every record carries are required; the others are checked when present
  * and never invented, so a record round-trips exactly as stored.
  */
-export const CharacterShape = z.looseObject({
+const CharacterShape = z.looseObject({
   schema: z.literal('personaggio/1'),
   id: z.string(),
   legacyId: z.string().optional(),
@@ -98,7 +99,7 @@ function refusingPrototypeKeys<T extends z.ZodType>(schema: T): z.ZodPipe<z.ZodC
 }
 
 /** What a client sends to create or edit a character: no store-owned key, `updated` optional (the planners set it from the Clock, `archui.js:38`). */
-export const CharacterInputShape = CharacterShape.omit({
+const CharacterInputShape = CharacterShape.omit({
   id: true,
   legacyId: true,
   version: true,
@@ -106,14 +107,7 @@ export const CharacterInputShape = CharacterShape.omit({
 }).extend({ updated: z.string().optional() });
 
 /** A superseded version as kept in the history: the character without its `revision`. */
-export const CharacterSnapshotShape = CharacterShape.omit({ revision: true });
-
-/*
- * The guarded schemas below parse; the shapes above derive. A pipe with a
- * custom check cannot be turned into JSON Schema on the request side, so route
- * and document schemas are derived from the shapes (`z.toJSONSchema(shape, {
- * io: 'input' })`), never from the guarded schemas.
- */
+const CharacterSnapshotShape = CharacterShape.omit({ revision: true });
 
 /** A stored character: what a store returns and what the planners build. */
 export const CharacterSchema = refusingPrototypeKeys(CharacterShape);
@@ -124,3 +118,26 @@ export type CharacterInput = z.infer<typeof CharacterInputSchema>;
 
 export const CharacterSnapshotSchema = refusingPrototypeKeys(CharacterSnapshotShape);
 export type CharacterSnapshot = z.infer<typeof CharacterSnapshotSchema>;
+
+/**
+ * JSON Schema of the three records, computed once from the unguarded shapes,
+ * which stay private so nothing outside this module can parse without the
+ * prototype-key guard. They are the request side (`io: 'input'`, draft-07) a
+ * route or a document uses; the guarded schemas above cannot be converted
+ * (a pipe with a custom check has no JSON Schema form). JSON Schema cannot
+ * express the deep key check, so a route still parses with the guarded
+ * schemas.
+ */
+const JSON_SCHEMA_OPTIONS = { io: 'input', target: 'draft-07' } as const;
+export const CHARACTER_JSON_SCHEMA: JsonSchema = z.toJSONSchema(
+  CharacterShape,
+  JSON_SCHEMA_OPTIONS,
+);
+export const CHARACTER_INPUT_JSON_SCHEMA: JsonSchema = z.toJSONSchema(
+  CharacterInputShape,
+  JSON_SCHEMA_OPTIONS,
+);
+export const CHARACTER_SNAPSHOT_JSON_SCHEMA: JsonSchema = z.toJSONSchema(
+  CharacterSnapshotShape,
+  JSON_SCHEMA_OPTIONS,
+);

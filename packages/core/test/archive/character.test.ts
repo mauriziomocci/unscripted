@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { z } from 'zod';
 import {
-  CharacterInputShape,
+  CHARACTER_INPUT_JSON_SCHEMA,
+  CHARACTER_JSON_SCHEMA,
+  CHARACTER_SNAPSHOT_JSON_SCHEMA,
   CharacterInputSchema,
   CharacterSchema,
-  CharacterShape,
-  CharacterSnapshotShape,
   CharacterSnapshotSchema,
 } from '../../src/archive/character';
 
@@ -111,8 +110,8 @@ describe('CharacterSchema values', () => {
 
 describe('the derived character schemas', () => {
   const STORE_KEYS = ['id', 'legacyId', 'version', 'revision'];
-  const inputShape = CharacterInputShape.shape;
-  const snapshotShape = CharacterSnapshotShape.shape;
+  const inputShape = CharacterInputSchema.out.shape;
+  const snapshotShape = CharacterSnapshotSchema.out.shape;
 
   it('leaves the store-owned keys out of CharacterInputSchema', () => {
     for (const key of STORE_KEYS) {
@@ -141,19 +140,21 @@ describe('the derived character schemas', () => {
   });
 });
 
-describe('JSON Schema of the character records', () => {
+describe('the JSON Schema constants of the character records', () => {
   it.each([
-    ['CharacterShape', CharacterShape],
-    ['CharacterInputShape', CharacterInputShape],
-    ['CharacterSnapshotShape', CharacterSnapshotShape],
-  ])('derives the request-side (io: input) schema of %s', (_name, shape) => {
-    const json = z.toJSONSchema(shape, { io: 'input' });
-    expect(json).toHaveProperty('properties.name');
+    ['CHARACTER_JSON_SCHEMA', CHARACTER_JSON_SCHEMA],
+    ['CHARACTER_INPUT_JSON_SCHEMA', CHARACTER_INPUT_JSON_SCHEMA],
+    ['CHARACTER_SNAPSHOT_JSON_SCHEMA', CHARACTER_SNAPSHOT_JSON_SCHEMA],
+  ])('%s is request-side draft-07 and open at the root', (_name, schema) => {
+    expect(schema).toHaveProperty('properties.name');
+    expect(schema['$schema']).toBe('http://json-schema.org/draft-07/schema#');
+    expect(schema['additionalProperties']).not.toBe(false);
   });
 
-  it('is built from the same shape the guarded schemas parse with', () => {
-    expect(CharacterSchema.out).toBe(CharacterShape);
-    expect(CharacterInputSchema.out).toBe(CharacterInputShape);
-    expect(CharacterSnapshotSchema.out).toBe(CharacterSnapshotShape);
+  it('keeps the store-owned keys out of the input and revision out of the snapshot', () => {
+    expect(CHARACTER_INPUT_JSON_SCHEMA).not.toHaveProperty('properties.id');
+    expect(CHARACTER_SNAPSHOT_JSON_SCHEMA).not.toHaveProperty('properties.revision');
+    expect(CHARACTER_SNAPSHOT_JSON_SCHEMA).toHaveProperty('properties.id');
+    expect(CHARACTER_JSON_SCHEMA).toHaveProperty('properties.revision');
   });
 });
