@@ -69,19 +69,19 @@ describe('BACKOFF_SCHEDULES of the other environments', () => {
 });
 
 describe('backoffWaitMs', () => {
-  it('gives the island waits 15, 30, 60, 120, 240 s, then stops', () => {
+  it('gives the island waits 15, 30, 60, 120, 240 s', () => {
     expect(waitsOfOneCall(BACKOFF_SCHEDULES.island)).toEqual(SECONDS(15, 30, 60, 120, 240));
   });
 
-  it('gives the talk show the same five waits, then stops', () => {
+  it('gives the talk show the same five waits', () => {
     expect(waitsOfOneCall(BACKOFF_SCHEDULES.talkshow)).toEqual(SECONDS(15, 30, 60, 120, 240));
   });
 
-  it('gives Venture 15, 30, 60, 120 s, then stops', () => {
+  it('gives Venture 15, 30, 60, 120 s', () => {
     expect(waitsOfOneCall(BACKOFF_SCHEDULES.venture)).toEqual(SECONDS(15, 30, 60, 120));
   });
 
-  it('gives the archive generator 15, 30, 60 s, then stops', () => {
+  it('gives the archive generator 15, 30, 60 s', () => {
     expect(waitsOfOneCall(BACKOFF_SCHEDULES.archiveGenerate)).toEqual(SECONDS(15, 30, 60));
   });
 
