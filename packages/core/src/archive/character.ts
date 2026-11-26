@@ -41,7 +41,7 @@ const VentureSchema = z.looseObject({
  * keys every record carries are required; the others are checked when present
  * and never invented, so a record round-trips exactly as stored.
  */
-const CharacterShape = z.looseObject({
+export const CharacterShape = z.looseObject({
   schema: z.literal('personaggio/1'),
   id: z.string(),
   legacyId: z.string().optional(),
@@ -92,24 +92,30 @@ function refusingPrototypeKeys<T extends z.ZodType>(schema: T): z.ZodPipe<z.ZodC
     .pipe(schema);
 }
 
+/** What a client sends to create or edit a character: no store-owned key, `updated` optional (the planners set it from the Clock, `archui.js:38`). */
+export const CharacterInputShape = CharacterShape.omit({
+  id: true,
+  legacyId: true,
+  version: true,
+  revision: true,
+}).extend({ updated: z.string().optional() });
+
+/** A superseded version as kept in the history: the character without its `revision`. */
+export const CharacterSnapshotShape = CharacterShape.omit({ revision: true });
+
+/*
+ * The guarded schemas below parse; the shapes above derive. A pipe with a
+ * custom check cannot be turned into JSON Schema on the request side, so route
+ * and document schemas are derived from the shapes (`z.toJSONSchema(shape, {
+ * io: 'input' })`), never from the guarded schemas.
+ */
+
 /** A stored character: what a store returns and what the planners build. */
 export const CharacterSchema = refusingPrototypeKeys(CharacterShape);
 export type Character = z.infer<typeof CharacterSchema>;
 
-/**
- * What a client sends to create or edit a character: no store-owned key
- * (`id`, `legacyId`, `version`, `revision`), and `updated` optional because
- * the planners set it from the Clock on every save (`archui.js:38`).
- */
-export const CharacterInputSchema = refusingPrototypeKeys(
-  CharacterShape.omit({ id: true, legacyId: true, version: true, revision: true }).extend({
-    updated: z.string().optional(),
-  }),
-);
+export const CharacterInputSchema = refusingPrototypeKeys(CharacterInputShape);
 export type CharacterInput = z.infer<typeof CharacterInputSchema>;
 
-/** A superseded version as kept in the history: the character without its `revision`. */
-export const CharacterSnapshotSchema = refusingPrototypeKeys(
-  CharacterShape.omit({ revision: true }),
-);
+export const CharacterSnapshotSchema = refusingPrototypeKeys(CharacterSnapshotShape);
 export type CharacterSnapshot = z.infer<typeof CharacterSnapshotSchema>;

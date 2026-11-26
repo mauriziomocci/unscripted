@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 import {
+  CharacterInputShape,
   CharacterInputSchema,
   CharacterSchema,
+  CharacterShape,
+  CharacterSnapshotShape,
   CharacterSnapshotSchema,
 } from '../../src/archive/character';
 
@@ -107,8 +111,8 @@ describe('CharacterSchema values', () => {
 
 describe('the derived character schemas', () => {
   const STORE_KEYS = ['id', 'legacyId', 'version', 'revision'];
-  const inputShape = CharacterInputSchema.out.shape;
-  const snapshotShape = CharacterSnapshotSchema.out.shape;
+  const inputShape = CharacterInputShape.shape;
+  const snapshotShape = CharacterSnapshotShape.shape;
 
   it('leaves the store-owned keys out of CharacterInputSchema', () => {
     for (const key of STORE_KEYS) {
@@ -134,5 +138,22 @@ describe('the derived character schemas', () => {
     const poisoned = JSON.parse('{"schema":"personaggio/1","a":{"__proto__":{}}}') as unknown;
     expect(CharacterInputSchema.safeParse(poisoned).success).toBe(false);
     expect(CharacterSnapshotSchema.safeParse(poisoned).success).toBe(false);
+  });
+});
+
+describe('JSON Schema of the character records', () => {
+  it.each([
+    ['CharacterShape', CharacterShape],
+    ['CharacterInputShape', CharacterInputShape],
+    ['CharacterSnapshotShape', CharacterSnapshotShape],
+  ])('derives the request-side (io: input) schema of %s', (_name, shape) => {
+    const json = z.toJSONSchema(shape, { io: 'input' });
+    expect(json).toHaveProperty('properties.name');
+  });
+
+  it('is built from the same shape the guarded schemas parse with', () => {
+    expect(CharacterSchema.out).toBe(CharacterShape);
+    expect(CharacterInputSchema.out).toBe(CharacterInputShape);
+    expect(CharacterSnapshotSchema.out).toBe(CharacterSnapshotShape);
   });
 });
