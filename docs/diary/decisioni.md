@@ -305,3 +305,31 @@ Le aggiunte al contratto API previste dal WI-2 in poi (sezione 2.9 della spec). 
   - modo di lavorare: Spec Kit completo (plan, task, analyze) con le regole più strette del progetto;
   - giocatore: nessun effetto diretto.
 - **Stato:** provvisoria, in attesa di conferma.
+
+### D-26-7: il proprietario delega sempre alla trinità
+
+- **Parole del proprietario (in chat, 14:40):** «Allora fai leggere e scegliere tutto quanto fatti dai le risposte dalla Trinità e fai sempre così. Da adesso io non sarò disponibile fino a stasera.»
+- **Come lo registro:** come profilo di autonomia del progetto, `git config --local pe.autonomy spec,schema,design,publish`, perché «fai sempre così» chiede una regola permanente e non una finestra. Il profilo vale finché il proprietario non lo cambia. È annotato anche nella memoria del progetto.
+- **Cosa apre:** ogni domanda che andrebbe al proprietario va alla trinità, come decisione provisoria registrata qui; questo include le modifiche nominate alla costituzione e a `CLAUDE.md` che la spec chiede (FR-102), fatte con il diff e con la storia di git come copia.
+- **Cosa non apre:** l'apertura `contract` (il proprietario non l'ha nominata; le aggiunte della sezione 2.9 servono dal WI-2 e glielo chiedo al rientro); i merge in `develop` e `main`; il lavoro notturno, che vuole una finestra con un'ora di fine (oggi la finestra D-26-0 finisce alle 21:00); tutto ciò che il punto 3 della modalità autonoma riserva sempre al proprietario.
+- **Stato:** registrata; vale da subito.
+
+### D-26-8: le risposte della trinità alle domande aperte
+
+- **Chi ha deciso:** la trinità, per delega del proprietario (D-26-7). Matteo da solo sui casi tecnici (OI-10, Q-26-1); Domenico sugli altri, dopo aver sentito Matteo; Riccardo non entra, perché nessuna risposta tocca un'interfaccia nuova.
+- **T001, costituzione 1.1.0:** applicata come da diff, identica alla proposta; copia di prima in `~/.claude/backups/unscripted/constitution-2026-11-26-before-1.1.0.md`.
+- **T002, `CLAUDE.md` (FR-102):** aggiornato nelle sole sezioni nominate (workspace `packages/ui` e `tools/golden`, firma di `LlmClient`, elenco delle porte e `Sound`); copia di prima in `~/.claude/backups/unscripted/CLAUDE-2026-11-26-before-FR-102.md`.
+- **OI-10 (Matteo):** i campi sconosciuti delle schede si conservano a ogni livello, non solo alla radice. Motivo: la spec vuole che nessun dato del codice vecchio vada perso nel giro di andata e ritorno, e Fastify scarterebbe i campi annidati non dichiarati (giro 1 del plan, I2); la lettera di FR-013 si allinea.
+- **Q-26-1 (Matteo):** opzione 2. `qualita.js` si copia nel repository con i nomi del commento della riga 26 sostituiti da nomi inventati; `tests/quality.test.js` non si copia nel WI-1, come già deciso, e nel WI-8 il suo banco si riscrive con nomi inventati. SC-003 prende la checksum della pagina costruita dai sorgenti copiati, e un controllo locale, eseguito una volta sul Mac e annotato, dimostra che l'unica differenza dalla pagina `299a` è quella riga. Motivo: l'opzione 1 richiede un intervento del proprietario sull'artifact, che oggi non c'è; l'opzione 2 non pubblica nessun nome e non blocca il lavoro.
+- **Q-17-2 (Domenico):** le 45 schede nuove si pubblicano così come sono, con la stessa regola che il proprietario ha dato per le 16 schede pronte (D-14-3). La scansione `q17-2-scan.md` (nello scratchpad) le trova pulite: nessun nome di colleghi o del luogo di lavoro (5 falsi positivi, sottostringhe come «radu» in «traduzione»), nessuna persona pubblica usata come personaggio (un solo cognome in comune con una persona pubblica, rischio basso), nessun dato personale.
+- **Conseguenza:** il branch locale `wi1-local-q26-1` non serve più. Tutto il WI-1 va sul branch pubblicabile, e la CI può girare su tutto.
+- **Q-17-1 (Domenico):** la v1 coincide con l'artifact nello stato fissato dal manifesto; le 13 parti del romanzo e le parti della Venture progettate ma mai costruite diventano un work item successivo al WI-6, da specificare quando arriva. Motivo: non c'è un oracolo con cui provarle identiche, e «deve entrare tutto» si riferisce a ciò che l'artifact ha guadagnato.
+- **OI-4, `symmetricRelations` e `warnings`:** confermati (D-26-4).
+- **Restano al proprietario:** le aggiunte al contratto della sezione 2.9, perché l'apertura `contract` non è nel profilo; servono dal WI-2, quindi non bloccano il WI-1.
+- **I cinque costi:**
+  - token: pochi, una scansione e le modifiche ai documenti;
+  - tempo: il WI-1 parte oggi invece che domani;
+  - qualità: nessun nome privato pubblicato, CI su tutto il WI-1;
+  - modo di lavorare: come chiede il proprietario;
+  - giocatore: tutte le schede dell'artifact arrivano nella v1.
+- **Stato:** provvisoria, in attesa di conferma.
