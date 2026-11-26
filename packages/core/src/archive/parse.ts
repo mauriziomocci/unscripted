@@ -58,6 +58,15 @@ const PENDING_RELATION = /^([^:]+):\s*([^,]+)(?:,\s*([-+−]?\d))?(?:,\s*["«“
 /** An italic line is the template's hint, not content (`archui.js:65`). */
 const TEMPLATE_HINT = /^\s*_[^_]+_\s*$/gm;
 
+/** A file longer than this is refused (`archui.js:82`): a sheet is a page or two, and the cap bounds the work a hostile file can cause. */
+const MAX_FILE_LENGTH = 200_000;
+/** One section is cut here (`archui.js:75`): longer text would crowd the prompt that carries it. */
+const MAX_SECTION_LENGTH = 20_000;
+/** Secrets and goals kept per sheet (`archui.js:76`), for the same reason. */
+const MAX_LIST_ITEMS = 12;
+/** The legacy message, verbatim (`archui.js:82`). */
+const FILE_TOO_LONG_MESSAGE = 'Il file è troppo lungo (oltre 200.000 caratteri).';
+
 const MIN_AGE = 3;
 const MAX_AGE = 95;
 const MAX_ROLE_LENGTH = 40;
@@ -229,11 +238,11 @@ function completeDraft(state: ReaderState, fileName: string): void {
   const sections: Record<string, string> = {};
   for (const key of TEXT_SECTION_KEYS) {
     const body = bodies[key];
-    if (body) sections[key] = body;
+    if (body) sections[key] = body.slice(0, MAX_SECTION_LENGTH);
   }
   draft.sections = sections;
-  if (bodies.segreti) draft.secrets = listOf(bodies.segreti);
-  if (bodies.obiettivi) draft.goals = listOf(bodies.obiettivi);
+  if (bodies.segreti) draft.secrets = listOf(bodies.segreti).slice(0, MAX_LIST_ITEMS);
+  if (bodies.obiettivi) draft.goals = listOf(bodies.obiettivi).slice(0, MAX_LIST_ITEMS);
   if (bodies.rapporti) {
     draft.pendingRelations = listOf(bodies.rapporti).flatMap(
       (item) => pendingRelationOf(item) ?? [],
@@ -252,6 +261,15 @@ function completeDraft(state: ReaderState, fileName: string): void {
  * import planner takes `archivio/1` files and the editor takes one sheet.
  */
 export function parseCharacterFile(text: string, fileName: string): ParsedCharacterFile {
+  if (text.length > MAX_FILE_LENGTH) {
+    const draft = { ...blankDraft(), name: fileNameWithoutExtension(fileName) || 'Senza nome' };
+    return {
+      character: draft,
+      recognisedSections: 0,
+      toOther: false,
+      error: FILE_TOO_LONG_MESSAGE,
+    };
+  }
   const state: ReaderState = {
     draft: blankDraft(),
     outline: [],
