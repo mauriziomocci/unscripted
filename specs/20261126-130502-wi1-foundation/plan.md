@@ -108,7 +108,7 @@ packages/core/                    # @unscripted/core: lib ES2022, types [] (A-03
 ├── src/store/                    # CharacterStore, GameStore types, StaleWriteError, StoreUnavailableError
 ├── src/archive/                  # character.ts (zod), ids.ts (FR-017), parse.ts + markdown.ts (FR-014), filters.ts, normalise.ts (editor rules, shared by UI and planners),
 │                                 # planners/{create,edit,restore,delete,pack,import,pending}.ts, storeArchive.ts (R-18), generate.ts (FR-072 «✨ Genera», archfuturo.js:69-155)
-├── prompts/it/archive-generate.md     # template of archGenPrompt with named placeholders (archfuturo.js:70-108), section 2.7's `core/prompts/it`; bundled as a string module; the oracle test runs the vendored archGenPrompt (R-25)
+├── prompts/it/archive-generate.md     # template of archGenPrompt with named placeholders (archfuturo.js:70-108), section 2.7's core/prompts/it; the single source. scripts/generate-prompt-modules.ts (root script content:generate) writes src/prompts/it/archive-generate.ts exporting it as a string literal, committed, with a drift test (R-26). Core never reads files. The oracle test runs the vendored archGenPrompt (R-25)
 ├── src/content/                  # archpack.json (16 present); archpack-futuro.json (42 future, local branch only)
 ├── src/capabilities.ts           # Speech, Downloads (P-06)
 ├── testing/                      # @unscripted/core/testing: shared contract suites (R-15)
@@ -304,6 +304,7 @@ Every FR of section 4.3 and every SC has a row; none is unplaced.
 - **OI-7 Scope of P-01a in WI-1.** The plan builds the shared-queue variant in core now, because the FR-053 suite asserts core's behaviour in its third column and the race test of P-01a; the island variant (`G.lightModel`, game state) arrives with WI-2, when the engine moves. To be confirmed.
 - **OI-8 LM Studio context length (U-5).** If LM Studio reports only the model's maximum context, US2 scenario 3 can miss a short loaded context; verified against the owner's LM Studio in B4.
 - **OI-9 Interface approval.** FR-075 departures need the owner's approval, and the owner's interface rule needs a UX study signed before code (Riccardo mode in a personal project); B5 starts with it.
+- **OI-10 Unknown fields in nested objects (FR-013).** FR-013 says unknown fields pass through "at the root only"; data-model.md and `CharacterSchema` (T047) keep them at every level, so that nested legacy fields survive the round trip (T135). The OpenAPI shape of nested objects freezes at the WI-1 merge, so the owner confirms the plan's choice, or the spec wording is amended. The question goes to the owner now, together with the go for T001 (OI-1), and must be answered before T164; until then the open-nested choice is the provisional default (light-gate verification, D-26-6). T299 only records the answer.
 
 ## Complexity Tracking
 

@@ -171,7 +171,7 @@ Rejected on the burden of proof (no requirement needs them): `@fastify/rate-limi
 
 ### R-15 Where the shared contract suites live (FR-050, FR-053)
 
-- **Decision.** The suites are functions in `packages/core/testing/` (outside `src/`, exported as the subpath `@unscripted/core/testing`), each taking a factory: `characterStoreContract(makeStore)`, `archiveClientContract(makeClient)`, `llmClientContract(makeClient, scenarioDriver)`. They import `vitest`, a dev dependency of every workspace. Where each runs:
+- **Decision.** The suites are functions in `packages/core/testing/` (outside `src/`, exported as the subpath `@unscripted/core/testing`), each taking a factory: `describeCharacterStore(name, makeStore)`, `describeArchiveClient(name, makeClient)`, `describeLlmClient(name, makeClient)` (the names tasks.md T088, T090, T097 and T100 use). They import `vitest`, a dev dependency of every workspace. Where each runs:
   - `apps/server` tests: the `CharacterStore` suite on `PgCharacterStore`, and the `ArchiveClient` suite on `StoreArchive` over it;
   - `apps/web` integration tests: the `ArchiveClient` suite on `HttpStore` against a server reached over HTTP (the compose `server` in local and CI, started through its own CLI entry), with the token added by a test `fetch` wrapper that plays the web tier; the LLM suite on `HttpLlmClient`;
   - `apps/artifact` tests: both archive suites on `IndexedDbStore` (fake-indexeddb) and `LocalArchive`; the LLM suite on `ArtifactLlmClient`.
@@ -277,6 +277,12 @@ Rejected on the burden of proof (no requirement needs them): `@fastify/rate-limi
   The same harness runs the vendored `archGenParse` against core's parser over valid, short, long and nameless answers. The test lives in `apps/artifact/test/`, which reads the vendored files; core's own unit tests cover the template filling. Every file it needs is in V1, so it runs on the pushed branch.
 - **Labels stay out of core (review N9).** Core keeps the role keys in legacy order and, per key, the Italian role name the prompt needs (`ROLES[i][2]`, prompt content, `archfuturo.js:7-16`), plus the tone keys. The group labels, the role labels shown in the UI, the icons and the tone labels («Serio», «Comico (equipaggio di disadattati)», `archfuturo.js:69`) are UI text in the `it` and `en` locales by key (FR-074). The UI never renders a core constant as a label.
 - **Rationale.** The prompt depends on the live archive and on three conditionals, so a verbatim text asset could not reproduce it. Only the legacy function itself can serve as the oracle.
+
+### R-26 Prompt assets in pure core (FR-072, spec 2.7)
+
+- **Decision.** Every prompt asset stays a versioned `.md` file under `packages/core/prompts/` (spec 2.7), the single source. A root script, `scripts/generate-prompt-modules.ts`, run by `content:generate` together with `scripts/generate-pack-content.ts`, turns each asset into a plain TypeScript module under `packages/core/src/prompts/` that exports the text as a string literal (`JSON.stringify` of the file's UTF-8 text, with a generated-file header naming the source and the command). The modules are committed; core imports them like any other `.ts`, and never reads a file. A drift test fails when a committed module differs from a fresh generation or has no `.md`. This reuses the pattern of `archpack.json` (a script, a committed generated file, a pinning test).
+- **Rationale.** One plain module works in every consumer of core in WI-1 (Vitest, the Vite build, the server under `tsx`, Node scripts, `tools/golden`) and in any later bundler, with no loader, no ambient module type under `types: []` and no Node API in core (A-03). WI-2's style asset and WI-7's Venture prompts use the same path.
+- **Alternatives.** Vite's `?raw` suffix: Vite-only; plain Node rejects a `.md` import with `ERR_UNKNOWN_FILE_EXTENSION` (probed 2026-11-26 with `?raw` and with `with { type: 'text' }`), so the server would crash at start once `src/index.ts` re-exports the generator. `fs.readFileSync` in core: breaks A-03. The template written directly as a TypeScript string: breaks spec 2.7's versioned `.md` assets, which later work items need byte-identical to the reference.
 
 ## Design review (three steps)
 
