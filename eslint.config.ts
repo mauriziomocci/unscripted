@@ -161,4 +161,20 @@ export default defineConfig(
     ],
     rules: { 'no-restricted-imports': ['error', { patterns: [LEGACY_IMPORT] }] },
   },
+  {
+    // LLM output is untrusted data: no component injects HTML (S-05). Core has its own
+    // no-restricted-syntax list (rule options replace each other across blocks) and its
+    // .ts files cannot hold JSX.
+    files: ['**/*.{ts,tsx}'],
+    ignores: ['packages/core/**'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "JSXAttribute[name.name='dangerouslySetInnerHTML']",
+          message: 'dangerouslySetInnerHTML is banned: render text, never injected HTML.',
+        },
+      ],
+    },
+  },
 );
