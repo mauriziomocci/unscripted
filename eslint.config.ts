@@ -14,7 +14,8 @@ const LEGACY_IMPORT = {
 
 /**
  * Root flat config, loaded through Node's native TypeScript support (the
- * `--flag` of the lint script) so no loader dependency is needed.
+ * `ESLINT_FLAGS` the dev image sets, and the CI job must set) so no loader
+ * dependency is needed.
  * Everything outside the vendored legacy folder is linted with the strict,
  * type-aware typescript-eslint rules (FR-003).
  */
