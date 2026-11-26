@@ -248,7 +248,7 @@ export declare function buildGeneratorPrompt(options: GeneratorOptions, crew: re
 /** archGenParse (archfuturo.js:119-124); the result is an editor preview, never saved. */
 export declare function parseGeneratedCharacter(answer: unknown, role: string, clock: Clock): { character: CharacterInput } | { error: string };
 /** One logical call: kind 'archive-generate', tier 'main', schedule archiveGenerate (3 retries, archfuturo.js:109-116). */
-export declare function generateCharacter(llm: LlmClient, options: GeneratorOptions, crew: readonly Character[], deps: ArchiveDeps): Promise<{ character: CharacterInput } | { error: string }>;
+export declare function generateCharacter(llm: LlmClient, options: GeneratorOptions, crew: readonly Character[], deps: ArchiveDeps & { readonly scheduler: Scheduler }): Promise<{ character: CharacterInput } | { error: string }>; // the scheduler paces the rate-limit retries; a failed model call throws its LlmError
 /** Distinct styles already used for a role, listed by the dialog (archfuturo.js:127, 136). */
 export declare function stylesForRole(crew: readonly Character[], role: string): readonly string[];
 

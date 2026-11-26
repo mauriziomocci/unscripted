@@ -21,3 +21,8 @@ export function createdOrigin(clock: Clock, era?: string): CharacterOrigin {
   const label = `creato nell'archivio · ${today(clock)}`;
   return era === 'futuro' ? { env: 'venture', label } : { label };
 }
+
+/** The origin of a sheet the «Genera» dialog wrote (`archfuturo.js:122`): always the Venture. */
+export function generatedOrigin(clock: Clock): CharacterOrigin {
+  return { env: 'venture', label: `generato con Claude · ${today(clock)}` };
+}
