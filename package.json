@@ -21,6 +21,9 @@
     "@vitest/coverage-v8": "catalog:",
     "prettier": "catalog:",
     "eslint": "catalog:",
-    "typescript-eslint": "catalog:"
+    "typescript-eslint": "catalog:",
+    "eslint-plugin-boundaries": "catalog:",
+    "eslint-plugin-import-x": "catalog:",
+    "eslint-import-resolver-typescript": "catalog:"
   }
 }

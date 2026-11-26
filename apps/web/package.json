@@ -5,5 +5,9 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@unscripted/core": "workspace:*",
+    "@unscripted/ui": "workspace:*"
   }
 }
