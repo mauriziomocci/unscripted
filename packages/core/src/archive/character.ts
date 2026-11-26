@@ -22,7 +22,12 @@ const RelationSchema = z.looseObject({
 });
 
 /** A relation written by name in an imported file, resolved when the target appears (`archui.js:85-88`). */
-const PendingRelationSchema = z.looseObject({ name: z.string() });
+const PendingRelationSchema = z.looseObject({
+  name: z.string(),
+  type: z.string(),
+  int: z.number().optional(),
+  view: z.string().optional(),
+});
 
 const OriginSchema = z.looseObject({ env: z.string().optional() });
 
