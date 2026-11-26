@@ -177,4 +177,16 @@ export default defineConfig(
       ],
     },
   },
+  {
+    // The mechanical taste gate (R-05): small, shallow, simple functions.
+    files: ['**/*.{ts,tsx}'],
+    rules: {
+      'max-lines-per-function': ['error', { max: 40, skipBlankLines: true, skipComments: true }],
+      'max-depth': ['error', 3],
+      complexity: ['error', 10],
+      'max-nested-callbacks': ['error', 3],
+      'no-empty': 'error',
+      '@typescript-eslint/no-floating-promises': 'error',
+    },
+  },
 );
