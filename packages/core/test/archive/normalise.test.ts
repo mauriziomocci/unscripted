@@ -105,6 +105,10 @@ describe('normaliseEdit era, role and style (archui.js:297, AM-07, AM2-06)', () 
     expect(result).toMatchObject({ era: 'futuro', role: 'timoniere', style: 'iil pilota/i' });
   });
 
+  it('maps a synonym to its key, as the editor select pre-selects it (archui.js:269)', () => {
+    expect(normalise({ era: 'futuro', role: 'pilota' }).role).toBe('timoniere');
+  });
+
   it('empties the role of a future character when it is not one of the 8 keys', () => {
     expect(normalise({ era: 'futuro', role: 'cuoco' }).role).toBe('');
     expect(normalise({ era: 'futuro' }).role).toBe('');

@@ -1,7 +1,7 @@
 import { DEFAULT_AGE } from './blank';
 import type { CharacterInput } from './character';
 import { archEra } from './era';
-import { ARCHIVE_ROLE_KEYS } from './roles';
+import { archRoleKey } from './roles';
 import { TEXT_SECTION_KEYS } from './sections';
 
 /** The editor refused the save; `code` says why, so callers decide by it and never by the message. */
@@ -68,8 +68,8 @@ function cleanRelations(
  * What the editor's save does to a form before storing it (`archui.js:297-303`,
  * FR-016). `selfId` is the character's own id, needed to drop relations to
  * itself. Pure: the input is not changed. Throws `NormaliseError` when the name
- * is empty. A future character keeps a role only if it is one of the eight
- * keys; a present or novel character has no role and no style (AM-07, AM2-06).
+ * is empty. A future character's role is mapped to one of the eight keys as the
+ * editor's select shows it (`archui.js:269`), or emptied; a present or novel character has no role and no style (AM-07, AM2-06).
  */
 export function normaliseEdit(input: CharacterInput, selfId: string): CharacterInput {
   const name = withoutBrackets(input.name);
@@ -87,7 +87,7 @@ export function normaliseEdit(input: CharacterInput, selfId: string): CharacterI
     relations: cleanRelations(input.relations, selfId),
   };
   if (era === 'futuro') {
-    result.role = ARCHIVE_ROLE_KEYS.includes(input.role ?? '') ? input.role : '';
+    result.role = archRoleKey(input.role);
     result.style = withoutBrackets(input.style ?? '');
   } else {
     delete result.role;

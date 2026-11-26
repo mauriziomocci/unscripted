@@ -146,7 +146,8 @@ function writeFor(
  * checked before anything is planned, so a bad file plans nothing. A character
  * is skipped when a live one is as new or newer (`updated` compared as strings),
  * and otherwise written by `writeFor`; ids and relation targets go through one
- * map (FR-017). A character listed twice is imported once. Pending relations
+ * map (FR-017). A character listed twice is imported once, as the last copy
+ * dated after the import when there is one (the legacy saves each copy in turn). Pending relations
  * are resolved afterwards without touching anyone's `updated`, because the
  * legacy resolves in memory there and does not save. Throws `InvalidArchiveFileError`.
  */
@@ -154,17 +155,23 @@ export function planImport(
   current: readonly StoredCharacter[],
   file: unknown,
   deps: ArchiveDeps,
-): CharacterBatch {
+): { readonly batch: CharacterBatch; readonly skipped: number } {
   const stamp = nowIso(deps);
   const incoming = readArchiveFile(file).map((raw) => completeRecord(raw, deps, stamp));
   const rows = new Map(current.map((row) => [row.character.id, row]));
-  const writes: CharacterWrite[] = [];
+  const winners = new Map<string, IncomingCharacter>();
   for (const entry of incoming) {
     const { id, updated } = entry.character;
     const row = rows.get(id);
-    if (row && !row.archived && row.character.updated >= updated) continue;
-    writes.push(writeFor(entry, row, stamp));
-    rows.set(id, { character: { ...entry.character, updated: stamp }, archived: false });
+    const storedAsNew = row && !row.archived && row.character.updated >= updated;
+    // An earlier copy of the same id was saved just now: a later one beats it only if dated in the future.
+    const earlierCopyNewer = winners.has(id) && updated <= stamp;
+    if (storedAsNew || earlierCopyNewer) continue;
+    winners.set(id, entry);
   }
-  return withPendingResolved(current, writes, null);
+  const writes = [...winners].map(([id, entry]) => writeFor(entry, rows.get(id), stamp));
+  return {
+    batch: withPendingResolved(current, writes, null),
+    skipped: incoming.length - winners.size,
+  };
 }

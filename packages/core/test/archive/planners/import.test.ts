@@ -4,6 +4,9 @@ import { InvalidArchiveFileError } from '../../../src/archive/planners/errors';
 import { planImport } from '../../../src/archive/planners/import';
 import { EARLIER, NOW_ISO, makeCharacter, makeDeps, stored } from './fixtures';
 
+/** The batch of an import, without the count. */
+const plan = (...args: Parameters<typeof planImport>) => planImport(...args).batch;
+
 const idOf = (legacy: string): string => mapIncomingId(legacy, () => 'unused').id;
 
 /** A character as `archui.js:211` exports it: no revision, no versions. */
@@ -47,22 +50,22 @@ describe('planImport, what it accepts (FR-025, FR-046)', () => {
     ['a character with a wrong field', archive([incoming('c_a1'), incoming('c_a2', { sex: 'x' })])],
     ['a character with a name that is not text', archive([incoming('c_a1', { name: 5 })])],
   ])('plans nothing and throws for %s', (_case, file) => {
-    expect(() => planImport([], file, makeDeps())).toThrow(InvalidArchiveFileError);
+    expect(() => plan([], file, makeDeps())).toThrow(InvalidArchiveFileError);
   });
 
   it.each(['__proto__', 'constructor', 'prototype'])('refuses a %s key at any depth', (key) => {
     const text = `{"schema":"archivio/1","chars":[{"name":"x","sections":{"${key}":{"a":1}}}]}`;
-    expect(() => planImport([], JSON.parse(text), makeDeps())).toThrow(InvalidArchiveFileError);
+    expect(() => plan([], JSON.parse(text), makeDeps())).toThrow(InvalidArchiveFileError);
   });
 
   it('accepts an empty archive and plans nothing', () => {
-    expect(planImport([], archive([]), makeDeps())).toEqual([]);
+    expect(plan([], archive([]), makeDeps())).toEqual([]);
   });
 });
 
 describe('planImport, new characters (archui.js:249)', () => {
   it('adds one as a first save with the incoming version, no reason and a mapped id', () => {
-    const [write] = planImport([], archive([incoming('c_a1', { revision: 40 })]), makeDeps());
+    const [write] = plan([], archive([incoming('c_a1', { revision: 40 })]), makeDeps());
     expect(write).toMatchObject({
       kind: 'versionedSave',
       expectedRevision: null,
@@ -79,7 +82,7 @@ describe('planImport, new characters (archui.js:249)', () => {
   });
 
   it('fills what a sparse file leaves out from the blank character', () => {
-    const [write] = planImport([], archive([{ name: 'Zed' }]), makeDeps());
+    const [write] = plan([], archive([{ name: 'Zed' }]), makeDeps());
     expect(write).toMatchObject({
       character: {
         id: 'new-1',
@@ -94,7 +97,7 @@ describe('planImport, new characters (archui.js:249)', () => {
   });
 
   it.each([[undefined], [''], [null]])('gives a character with the id %j a fresh id', (id) => {
-    const [write] = planImport([], archive([incoming('c_a1', { id })]), makeDeps());
+    const [write] = plan([], archive([incoming('c_a1', { id })]), makeDeps());
     expect(write).toMatchObject({ character: { id: 'new-1' } });
     expect(write).not.toHaveProperty('character.legacyId');
   });
@@ -102,11 +105,7 @@ describe('planImport, new characters (archui.js:249)', () => {
 
 describe('planImport, new characters, the rest', () => {
   it('keeps keys it does not know', () => {
-    const [write] = planImport(
-      [],
-      archive([incoming('c_a1', { extra: { deep: [1] } })]),
-      makeDeps(),
-    );
+    const [write] = plan([], archive([incoming('c_a1', { extra: { deep: [1] } })]), makeDeps());
     expect(write).toMatchObject({ character: { extra: { deep: [1] } } });
   });
 });
@@ -117,7 +116,7 @@ describe('planImport, the id map (FR-017)', () => {
       incoming('c_a1', { relations: [{ to: 'c_a2', type: 'amici', int: 1, view: '' }] }),
       incoming('c_a2'),
     ];
-    const [first] = planImport([], archive(chars), makeDeps());
+    const [first] = plan([], archive(chars), makeDeps());
     expect(first).toMatchObject({ character: { relations: [{ to: idOf('c_a2') }] } });
   });
 });
@@ -126,7 +125,7 @@ describe('planImport, uuids', () => {
   it('keeps ids that are already uuids, so an export of the web app imports without duplicates', () => {
     const uuid = '8f14e45f-ceea-467a-9575-4a1b1c9f0e11';
     const existing = makeCharacter({ id: uuid, updated: '2026-11-26T00:00:00.000Z' });
-    expect(planImport([stored(existing)], archive([incoming(uuid)]), makeDeps())).toEqual([]);
+    expect(plan([stored(existing)], archive([incoming(uuid)]), makeDeps())).toEqual([]);
   });
 });
 
@@ -136,13 +135,13 @@ describe('planImport, the skip rule (archui.js:249)', () => {
     ['as new as', '2026-11-25T10:00:00.000Z'],
   ])('skips a character when the stored one is %s the incoming', (_case, updated) => {
     const existing = makeCharacter({ id: idOf('c_a1'), updated });
-    expect(planImport([stored(existing)], archive([incoming('c_a1')]), makeDeps())).toEqual([]);
+    expect(plan([stored(existing)], archive([incoming('c_a1')]), makeDeps())).toEqual([]);
   });
 });
 
 describe('planImport, replacing and repeating', () => {
   it('replaces a stored character that is older, as a versioned save with the reason «import archivio»', () => {
-    const [write, ...rest] = planImport([stored(stale)], archive([incoming('c_a1')]), makeDeps());
+    const [write, ...rest] = plan([stored(stale)], archive([incoming('c_a1')]), makeDeps());
     expect(rest).toEqual([]);
     expect(write).toMatchObject({
       kind: 'versionedSave',
@@ -153,9 +152,7 @@ describe('planImport, replacing and repeating', () => {
   });
 
   it('imports a character once when the file lists its id twice', () => {
-    expect(planImport([], archive([incoming('c_a1'), incoming('c_a1')]), makeDeps())).toHaveLength(
-      1,
-    );
+    expect(plan([], archive([incoming('c_a1'), incoming('c_a1')]), makeDeps())).toHaveLength(1);
   });
 });
 
@@ -165,7 +162,7 @@ describe('planImport, pending relations (archui.js:249)', () => {
       revision: 2,
       pendingRelations: [{ name: 'c_a1', type: 'amici', int: 0, view: '' }],
     });
-    const batch = planImport([stored(holder)], archive([incoming('c_a1')]), makeDeps());
+    const batch = plan([stored(holder)], archive([incoming('c_a1')]), makeDeps());
     expect(batch).toHaveLength(2);
     expect(batch[1]).toMatchObject({
       kind: 'inPlaceUpdate',
@@ -191,7 +188,7 @@ const row = (v: unknown, changes: Record<string, unknown> = {}): Record<string, 
 
 /** The history a first save of `c_a1` at `version` carries after the import. */
 function inlineVersionsOf(versions: unknown[], version = 5) {
-  const [write] = planImport([], archive([incoming('c_a1', { version, versions })]), makeDeps());
+  const [write] = plan([], archive([incoming('c_a1', { version, versions })]), makeDeps());
   return write?.kind === 'versionedSave' ? write.inlineVersions : undefined;
 }
 
@@ -257,14 +254,14 @@ describe('planImport, which inline versions are kept', () => {
     ['a row whose data is not a valid character', [{ v: 1, data: { name: 5 } }]],
   ])('refuses a file with %s', (_case, versions) => {
     const file = archive([incoming('c_a1', { versions })]);
-    expect(() => planImport([], file, makeDeps())).toThrow(InvalidArchiveFileError);
+    expect(() => plan([], file, makeDeps())).toThrow(InvalidArchiveFileError);
   });
 });
 
 describe('planImport, inline versions and deleted rows', () => {
   it('discards the inline versions of a character that replaces a stored one', () => {
     const file = archive([incoming('c_a1', { versions: [row(1)] })]);
-    const [write] = planImport([stored(stale)], file, makeDeps());
+    const [write] = plan([stored(stale)], file, makeDeps());
     expect(write).toMatchObject({ reason: 'import archivio' });
     expect(write).not.toHaveProperty('inlineVersions');
   });
@@ -274,7 +271,7 @@ describe('planImport, inline versions and deleted rows', () => {
     const file = archive([
       incoming('c_a1', { versions: [row(1)], updated: '2020-01-01T00:00:00.000Z' }),
     ]);
-    const [write, ...rest] = planImport([stored(archived, true)], file, makeDeps());
+    const [write, ...rest] = plan([stored(archived, true)], file, makeDeps());
     expect(rest).toEqual([]);
     expect(write).toMatchObject({
       kind: 'versionedSave',
@@ -283,5 +280,32 @@ describe('planImport, inline versions and deleted rows', () => {
       character: { id: archived.id, version: 4, revision: 6, updated: NOW_ISO },
     });
     expect(write).not.toHaveProperty('inlineVersions');
+  });
+});
+
+describe('planImport, the count for the note (archui.js:249-251)', () => {
+  it('counts the characters it skipped, whatever the reason', () => {
+    const existing = makeCharacter({ id: idOf('c_a1'), updated: '2026-11-26T00:00:00.000Z' });
+    const file = archive([incoming('c_a1'), incoming('c_a2'), incoming('c_a2')]);
+    expect(planImport([stored(existing)], file, makeDeps()).skipped).toBe(2);
+  });
+
+  it('counts none for a file whose characters are all new', () => {
+    expect(planImport([], archive([incoming('c_a1'), incoming('c_a2')]), makeDeps()).skipped).toBe(
+      0,
+    );
+  });
+});
+
+describe('planImport, one id twice in a file dated after the import', () => {
+  it('writes the id once, from the last copy', () => {
+    const future = '2027-01-01T00:00:00.000Z';
+    const file = archive([
+      incoming('c_a1', { name: 'Prima' }),
+      incoming('c_a1', { name: 'Seconda', updated: future }),
+    ]);
+    const batch = plan([], file, makeDeps());
+    expect(batch).toHaveLength(1);
+    expect(batch[0]).toMatchObject({ expectedRevision: null, character: { name: 'Seconda' } });
   });
 });

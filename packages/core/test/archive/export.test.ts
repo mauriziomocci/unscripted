@@ -4,6 +4,9 @@ import { toArchiveFile } from '../../src/archive/export';
 import { planImport } from '../../src/archive/planners/import';
 import { NOW_ISO, NOW_MS, makeCharacter, makeDeps, stored } from './planners/fixtures';
 
+/** The batch of an import, without the count. */
+const plan = (...args: Parameters<typeof planImport>) => planImport(...args).batch;
+
 const clock = { now: () => NOW_MS, perfNow: () => 0 };
 
 describe('toArchiveFile (archui.js:211, FR-026)', () => {
@@ -62,7 +65,7 @@ describe('toArchiveFile, the round trip with the import', () => {
       relations: [{ to: a.id, type: 'amici', int: 2, view: 'x' }],
     });
     const file = toArchiveFile([stored(a), stored(b)], clock);
-    const batch = planImport([], file, makeDeps());
+    const batch = plan([], file, makeDeps());
     const back = batch.flatMap((write) => (write.kind === 'softDelete' ? [] : [write.character]));
     expect(back.map((c) => c.id)).toEqual([a.id, b.id]);
     expect(back[0]).toMatchObject({ legacyId: 'c_a1' });
