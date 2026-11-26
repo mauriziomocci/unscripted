@@ -1,4 +1,5 @@
 import { RuleTester } from 'eslint';
+import tseslint from 'typescript-eslint';
 import { describe, it } from 'vitest';
 import rule from './no-swallowed-error.ts';
 
@@ -29,5 +30,18 @@ tester.run('no-swallowed-error', rule, {
     { code: 'p.catch(() => null);', errors: [{ messageId: 'swallowedHandler' }] },
     { code: 'p.catch(swallow);', errors: [{ messageId: 'opaqueHandler' }] },
     { code: 'p.then(ok, onRejected);', errors: [{ messageId: 'rejectionInThen' }] },
+  ],
+});
+
+// The repository lints TypeScript, so the rule must also hold on the typescript-eslint AST.
+const typedTester = new RuleTester({ languageOptions: { parser: tseslint.parser } });
+
+typedTester.run('no-swallowed-error (typescript parser)', rule, {
+  valid: [{ code: 'try { f(); } catch (e: unknown) { throw e as Error; }' }],
+  invalid: [
+    {
+      code: 'p.catch((e: unknown): null => null);',
+      errors: [{ messageId: 'swallowedHandler' }],
+    },
   ],
 });

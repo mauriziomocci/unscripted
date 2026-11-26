@@ -8,11 +8,14 @@ const FUNCTION_TYPES = new Set([
   'ArrowFunctionExpression',
 ]);
 
-function isNode(value: unknown): value is Rule.Node {
+/** Any ESTree node, with or without the `parent` link the rule API adds. */
+interface AstNode {
+  type: string;
+}
+
+function isNode(value: unknown): value is AstNode {
   return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (value as { type?: unknown }).type === 'string'
+    typeof value === 'object' && value !== null && 'type' in value && typeof value.type === 'string'
   );
 }
 
@@ -21,18 +24,21 @@ function isNode(value: unknown): value is Rule.Node {
  * function: a throw inside a callback runs later, so it does not rethrow the
  * error being handled.
  */
-function containsThrow(node: Rule.Node, visitorKeys: VisitorKeys): boolean {
+function containsThrow(node: AstNode, visitorKeys: VisitorKeys): boolean {
   if (node.type === 'ThrowStatement') return true;
   if (FUNCTION_TYPES.has(node.type)) return false;
-  const record = node as unknown as Record<string, unknown>;
   return (visitorKeys[node.type] ?? []).some((key) => {
-    const child = record[key];
-    const children = Array.isArray(child) ? (child as unknown[]) : [child];
-    return children.some((item) => isNode(item) && containsThrow(item, visitorKeys));
+    const child: unknown = Reflect.get(node, key);
+    return (Array.isArray(child) ? child : [child]).some(
+      (item: unknown) => isNode(item) && containsThrow(item, visitorKeys),
+    );
   });
 }
 
-function methodName(callee: Rule.Node): string | undefined {
+type Callee = Extract<Rule.Node, { type: 'CallExpression' }>['callee'];
+
+/** The name in `object.name(...)`, when the call has that shape. */
+function calledMethod(callee: Callee): string | undefined {
   if (callee.type !== 'MemberExpression' || callee.computed) return undefined;
   return callee.property.type === 'Identifier' ? callee.property.name : undefined;
 }
@@ -63,21 +69,19 @@ const rule: Rule.RuleModule = {
     const { visitorKeys } = context.sourceCode;
     return {
       CatchClause(node) {
-        if (!containsThrow(node.body as Rule.Node, visitorKeys)) {
+        if (!containsThrow(node.body, visitorKeys)) {
           context.report({ node, messageId: 'swallowedCatch' });
         }
       },
       CallExpression(node) {
-        const name = methodName(node.callee as Rule.Node);
+        const name = calledMethod(node.callee);
         const [handler] = node.arguments;
         if (name === 'then' && node.arguments.length >= 2) {
           context.report({ node, messageId: 'rejectionInThen' });
         } else if (name === 'catch' && handler) {
-          if (!FUNCTION_TYPES.has(handler.type)) {
+          if (handler.type !== 'ArrowFunctionExpression' && handler.type !== 'FunctionExpression') {
             context.report({ node, messageId: 'opaqueHandler' });
-          } else if (
-            !containsThrow((handler as unknown as { body: Rule.Node }).body, visitorKeys)
-          ) {
+          } else if (!containsThrow(handler.body, visitorKeys)) {
             context.report({ node, messageId: 'swallowedHandler' });
           }
         }
