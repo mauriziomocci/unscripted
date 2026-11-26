@@ -6,6 +6,7 @@ import { LLM_CALL_KINDS } from '../../src/llm/kinds';
  * `contracts/core-ports.d.ts:10-28`: the strings are persisted data (call
  * statistics in saved games and archives), so a rename is a migration.
  */
+// jscpd:ignore-start taste-exempt: the test keeps its own copy of the list on purpose, so renaming a kind in src alone fails it
 const EXPECTED_KINDS = [
   // island kinds, verbatim; 'god mode' keeps its space
   'mente',
@@ -73,6 +74,7 @@ const EXPECTED_KINDS = [
   'stesura',
   'aiuto',
 ];
+// jscpd:ignore-end
 
 describe('LLM_CALL_KINDS', () => {
   it('lists the 59 kinds of FR-011 in order', () => {
