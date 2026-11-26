@@ -48,7 +48,7 @@ const SECTION_SYNONYMS: readonly (readonly [key: string, pattern: RegExp])[] = [
 /** Where a heading goes when no synonym fits; the text is kept, not used by the game. */
 const OTHER_SECTION = 'altro';
 
-/** Where text that comes before any heading goes (`archui.js:73`). */
+/** Where text that comes before any heading goes (`archui.js:71`). */
 const UNTITLED_TEXT_SECTION = 'storia';
 
 const HEADING = /^(#{1,3})\s+(.+?)\s*$/;
@@ -58,7 +58,7 @@ const HEADER_LINE =
 const LIST_MARK = /^\s*[-*\d.)]+\s*/;
 /** `Name: type, intensity, "what they think"`, intensity and opinion optional (`archui.js:79`). */
 const PENDING_RELATION = /^([^:]+):\s*([^,]+)(?:,\s*([-+−]?\d))?(?:,\s*["«“]?(.+?)["»”]?)?$/;
-/** An italic line is the template's hint, not content (`archui.js:65`). */
+/** An italic line is the template's hint, not content (`archui.js:64`). */
 const TEMPLATE_HINT = /^\s*_[^_]+_\s*$/gm;
 
 /** A file longer than this is refused (`archui.js:82`): a sheet is a page or two, and the cap bounds the work a hostile file can cause. */
@@ -156,7 +156,7 @@ function openSection(state: ReaderState, title: string): void {
   state.outline.push(state.current);
 }
 
-/** A `#` heading names the sheet while it has no name; any other heading opens a section (`archui.js:66-67`). */
+/** A `#` heading names the sheet while it has no name; any other heading opens a section (`archui.js:67-68`). */
 function readHeading(state: ReaderState, heading: RegExpExecArray): void {
   const [, level = '', title = ''] = heading;
   if (level === '#' && !state.draft.name) {
@@ -166,7 +166,7 @@ function readHeading(state: ReaderState, heading: RegExpExecArray): void {
   }
 }
 
-/** Text before any heading goes to the story, as one untitled section (`archui.js:73`). */
+/** Text before any heading goes to the story, as one untitled section (`archui.js:71`). */
 function addBodyLine(state: ReaderState, line: string): void {
   if (state.current === null) {
     if (!line.trim()) return;
@@ -176,7 +176,7 @@ function addBodyLine(state: ReaderState, line: string): void {
   state.buffer.push(line);
 }
 
-/** Reads one line; the order of the checks is the legacy one (`archui.js:66-75`). */
+/** Reads one line; the order of the checks is the legacy one (`archui.js:67-75`). */
 function readLine(state: ReaderState, line: string): void {
   const heading = HEADING.exec(line);
   if (heading) {

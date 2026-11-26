@@ -5,7 +5,7 @@ import type { PlannedBatch } from './types';
 
 type Relation = NonNullable<Character['relations']>[number];
 
-/** The link the other side gets: same type and intensity, no opinion of its own (`archui.js:305`). */
+/** The link the other side gets: same type and intensity, no opinion of its own (`archui.js:306`). */
 function reciprocalOf(character: Character, relation: Relation): Relation {
   return { to: character.id, type: relation.type, int: relation.int ?? 0, view: '' };
 }
