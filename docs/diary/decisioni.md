@@ -237,3 +237,53 @@ Le aggiunte al contratto API previste dal WI-2 in poi (sezione 2.9 della spec). 
   - giocatore: il romanzo entra nella v1, con lo strato di qualità della prosa.
 - **Restano al proprietario:** Q-26-1 (nomi di persone reali in `qualita.js:26` e nei test di qualità), Q-17-1, Q-17-2, le aggiunte pianificate al contratto (sezione 2.9, ora con tre righe nuove).
 - **Stato:** approvata in via provvisoria, in attesa di conferma.
+
+### D-26-3: la costituzione 1.1.0 aspetta il proprietario, il codice non parte oggi
+
+- **Chi ha deciso:** il coordinatore, nel ruolo di Domenico, dopo aver sentito la posizione tecnica (Matteo: la spec, alla sezione 4.9, vieta codice prima dell'emendamento della costituzione).
+- **Situazione:** il plan del WI-1 mette come primo compito (T001) l'emendamento 1.1.0 della costituzione, richiesto da FR-102. La costituzione è uno strato di istruzioni del progetto, e le regole del proprietario gli riservano le modifiche ai file di istruzioni, con backup, diff e via esplicito; la finestra D-26-0 non le apre.
+- **Decisione:** non applico l'emendamento. Preparo il testo esatto come diff in `specs/20261126-130502-wi1-foundation/constitution-1.1.0-proposal.md`, così il via del proprietario costa una lettura. Fino al via nessun compito di implementazione parte; oggi si chiudono plan, revisione e task.
+- **Conferma collegata (OI-2 del plan):** `archpack-futuro.js`, che contiene le 42 schede del futuro, resta fuori dai push come le altre schede di Q-17-2, sul branch locale `wi1-local-q26-1`, come già deciso il 17 novembre.
+- **I cinque costi:**
+  - token: nessun costo in più, anzi un risparmio, perché il codice non parte su una base non approvata;
+  - tempo: l'implementazione slitta a dopo il via, cioè a domani;
+  - qualità: nessun codice sotto un testo della costituzione che lo contraddice;
+  - modo di lavorare: rispetta la riserva sui file di istruzioni;
+  - giocatore: nessun effetto oggi.
+- **Stato:** provvisoria, in attesa di conferma.
+
+### D-26-4: il contratto di scrittura dei personaggi si corregge prima del congelamento
+
+- **Chi ha deciso:** la trinità. Matteo (revisore avversariale del plan, giro 1: `NOT CONVERGED`, `0/10/12`, `COVERAGE: full`) e Riccardo (revisione dell'esperienza dell'API: 6 importanti, 3 minori) sono arrivati per strade separate allo stesso difetto; il coordinatore, come Domenico, ha deciso dopo averli sentiti.
+- **Verifiche indipendenti:** Matteo ha controllato nel codice che l'opzione di relazione simmetrica è necessaria (FR-016; il client non può scrivere le due relazioni in modo atomico). Riccardo ha controllato che l'avviso «vale per entrambi» non ha un canale di ritorno né nel web né nell'artifact. Ho trovato un errore nella sua verifica: ha letto `archui.js` dal riferimento vecchio del 14 novembre, quindi il suo rilievo sullo spostamento delle righe va ricontrollato sul riferimento fissato.
+- **Decisione:**
+  - l'opzione resta, con il nome `symmetricRelations`, e non vale mai di default per le scritture sul posto;
+  - un solo id (dal percorso) e una sola revisione attesa; la discordanza fra percorso e corpo si risponde con il codice esistente `invalid_request`;
+  - le risposte di scrittura portano un elenco `warnings` con l'avviso di incoerenza, perché FR-016 e FR-072 lo richiedono;
+  - `message` degli errori è testo inglese per sviluppatori; il giocatore vede i testi italiani scelti dall'interfaccia in base al `code`;
+  - si rinominano solo i nomi scelti dal plan; quelli fissati da un FR restano, e un eventuale dubbio va al proprietario.
+- **Perché la trinità può decidere:** il contratto del WI-1 non è ancora consegnato (si congela al merge), e il campo nuovo serve a un requisito che c'è già; è lo stesso caso dei tipi di chiamata aggiunti prima del congelamento (D-17-2, D-26-2).
+- **I cinque costi:**
+  - token: un giro di correzione del plan, circa 3 punti;
+  - tempo: mezz'ora;
+  - qualità: un difetto che sarebbe diventato permanente si corregge prima;
+  - modo di lavorare: Riccardo e Matteo in coppia avversariale, come chiedono le regole;
+  - giocatore: l'avviso «vale per entrambi» arriva in tutte e due le forme.
+- **Stato:** provvisoria, in attesa di conferma.
+
+### D-26-5: plan del WI-1 approvato in via provvisoria (cancello leggero)
+
+- **Chi ha deciso:** la trinità. Il coordinatore ha fatto da Domenico; Matteo è il revisore avversariale indipendente; Riccardo ha rivisto l'esperienza dell'API nel giro 1 e i suoi rilievi sono stati verificati da Matteo nel giro 2.
+- **Apertura usata:** `design` e `spec` della finestra D-26-0 (il cancello leggero del plan, che spetterebbe al proprietario).
+- **Il ciclo:**
+  - giro 1: `VERDICT: NOT CONVERGED`, `FINDINGS: 0/10/12`, `COVERAGE: full`; Riccardo: 6 importanti, 3 minori;
+  - giro 2: `VERDICT: NOT CONVERGED`, `FINDINGS: 0/2/7`, `COVERAGE: full`;
+  - giro di verifica, che chiude il ciclo: `VERDICT: CONVERGED`, `FINDINGS: 0/0/3`, `COVERAGE: full`. I tre minori sono applicati.
+- **Scelte principali del plan:** un solo applicatore dell'archivio nel core (`StoreArchive`) usato dal server e dall'artifact; vincoli nel database (CHECK, UNIQUE, FK) e `games.environment` come testo con CHECK; guardie strutturali in ESLint (direzione delle dipendenze, cicli, nessun ORM nelle rotte, soglie di gusto) più `jscpd` per i duplicati e una regola locale per i catch che inghiottono errori; client Anthropic con `maxRetries: 0`; oggetti di opzione chiusi (chiave sconosciuta: 400) e schede dei personaggi aperte; il generatore «✨ Genera» nel core con il prompt del codice vecchio come oracolo; la parte trattenuta da Q-26-1 e Q-17-2 su un branch locale separato.
+- **I cinque costi:**
+  - token: circa 9 punti della settimana fra plan, tre giri e correzioni;
+  - tempo: circa un'ora e venti;
+  - qualità: 46 rilievi corretti prima del codice, fra cui tre difetti che il contratto avrebbe reso permanenti (canale degli avvisi, campi sconosciuti eliminati in silenzio, ritentativi dell'SDK);
+  - modo di lavorare: pianificatore e revisore ripresi con il loro contesto, per spendere meno;
+  - giocatore: nessun effetto diretto; l'archivio della v1 nasce su un contratto rivisto.
+- **Stato:** provvisoria, in attesa di conferma.
