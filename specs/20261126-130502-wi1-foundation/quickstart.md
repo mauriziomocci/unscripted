@@ -35,6 +35,12 @@ dc run --rm --profile e2e e2e pnpm test:e2e                   # Playwright: web 
 
 Parallel sessions do not share a database: set `DATABASE_URL_TEST` to a database of your own before running the integration tests (owner's isolation rule; the init script creates `unscripted_test` only).
 
+## Tooling notes
+
+- ESLint loads `eslint.config.ts` through Node's native TypeScript support. The dev image sets `ESLINT_FLAGS=unstable_native_nodejs_ts_config`, so `dc run --rm server pnpm exec eslint <file>` works inside the container; outside it a bare `eslint` call exits 2 ("Oops! Something went wrong").
+- `pnpm lint` runs ESLint, `scripts/check-taste-exemptions.ts` (every `eslint-disable` and `jscpd:ignore-start` needs `taste-exempt: <reason>`) and `jscpd`.
+- pnpm 12 reads its settings from `pnpm-workspace.yaml`, not from `.npmrc`; `engineStrict: true` is why an install on Node 26 is refused.
+
 ## Artifact (US5)
 
 ```bash

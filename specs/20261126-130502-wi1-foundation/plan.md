@@ -75,21 +75,21 @@ specs/20261126-130502-wi1-foundation/
 
 ```text
 package.json                      # packageManager pnpm@12.20.0, engines node >=22 <23, root scripts (golden:record, golden:check, lint, ...)
-pnpm-workspace.yaml               # packages/*, apps/*, tools/golden; catalog of shared versions
-.npmrc                            # engine-strict=true
+pnpm-workspace.yaml               # packages/*, apps/*, tools/golden; catalog of shared versions; engineStrict: true (pnpm 12 ignores .npmrc engine-strict)
 .nvmrc                            # 22
 tsconfig.base.json                # strict base (R-03)
+tsconfig.tooling.json             # puts scripts/, eslint-rules/ and the root configs under tsc -b and the lint project service
 eslint.config.ts                  # boundaries, no-cycle, taste gate, guards (R-04, R-05)
 .prettierrc  .prettierignore      # legacy/ excluded (FR-003)
 vitest.config.ts                  # workspace projects, coverage floors, closed exclusion list (FR-004)
 .gitignore                        # FR-005: keep .envs/**/*.example; add backups/
-scripts/check-taste-exemptions.ts # every disable of a taste rule and every jscpd:ignore-start carries taste-exempt: (R-05)
+scripts/check-taste-exemptions.ts # every eslint-disable and every jscpd:ignore-start carries taste-exempt: (R-05)
 eslint-rules/no-swallowed-error.ts # local rule for the catch/rethrow guard, with its RuleTester tests (R-05, V2)
 scripts/generate-pack-content.ts  # vendored archpack*.js -> packages/core/src/content/*.json (pinned by a test)
 .github/workflows/ci.yml  nightly.yml          # FR-103
 docker-compose.local.yml  docker-compose.production.yml                  # FR-060, FR-061
 compose/db/init.sql                            # creates unscripted and unscripted_test
-compose/server/Dockerfile                      # dev stage (python3 pinned, for FR-082) and prod stage, node:22.23.5-alpine by digest, non-root
+compose/server/Dockerfile                      # dev stage (python3 and git minor-pinned, ESLINT_FLAGS set; python3 for FR-082) and prod stage, node:22.23.5-alpine by digest, non-root
 compose/web/Dockerfile                         # Vite dev stage; build stage; nginx-unprivileged runtime
 compose/web/nginx/default.conf.template        # default_server 444, Host $http_host, 16m on archive writes, token header
 compose/web/nginx/15-session-token.envsh       # exports the token before templates render (FR-042)
@@ -214,7 +214,7 @@ Block = where it is built (B0 to B12 above). Proof = the test or measurement tha
 | Req | Component | Block | Proof |
 |---|---|---|---|
 | FR-001 | pnpm workspace, six workspaces, strict tsconfigs | B1 | `pnpm -r typecheck`; workspace list test |
-| FR-002 | `engines`, `.npmrc engine-strict`, `.nvmrc`, `packageManager`, dev image | B1 | install on Node 26 refused; container install passes |
+| FR-002 | `engines`, `engineStrict` in `pnpm-workspace.yaml`, `.nvmrc`, `packageManager`, dev image | B1 | install on Node 26 refused; container install passes |
 | FR-003 | `eslint.config.ts`, `.prettierignore` | B1 | each guard red on an injected violation |
 | FR-004 | `vitest.config.ts` projects, floors, closed exclusions | B1 | CI coverage job; SC-002 |
 | FR-005 | `.gitignore` | B1 | `git check-ignore` test on an example file and a real env file |
