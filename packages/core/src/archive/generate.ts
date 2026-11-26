@@ -3,6 +3,7 @@ import { LlmError } from '../llm/errors';
 import type { LlmClient, LlmResult } from '../llm/request';
 import { TEXT as GENERATOR_TEMPLATE } from '../prompts/it/archive-generate';
 import type { Scheduler } from '../time/ports';
+import { pause } from '../time/pause';
 import type { Character, CharacterInput } from './character';
 import type { ArchiveDeps } from './deps';
 import { archEra } from './era';
@@ -126,12 +127,6 @@ export function parseGeneratedCharacter(
 /** What a generation needs beyond the archive's own deps: a timer for the pauses between retries. */
 export interface GeneratorDeps extends ArchiveDeps {
   readonly scheduler: Scheduler;
-}
-
-function pause(scheduler: Scheduler, ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    scheduler.setTimeout(resolve, ms);
-  });
 }
 
 /** One logical call: a rate limit is retried on the `archiveGenerate` schedule, any other error reaches the caller (`archfuturo.js:109-116`). */

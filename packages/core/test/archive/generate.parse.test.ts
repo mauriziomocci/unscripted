@@ -8,7 +8,7 @@ import {
 } from '../../src/archive/generate';
 import { LlmError } from '../../src/llm/errors';
 import type { LlmClient, LlmRequest, LlmResult } from '../../src/llm/request';
-import type { Scheduler, TimerHandle } from '../../src/time/ports';
+import { instantScheduler } from '../support/instantScheduler';
 
 const CLOCK = { now: () => Date.parse('2026-11-27T09:30:00.000Z'), perfNow: () => 0 };
 const OPTIONS: GeneratorOptions = {
@@ -94,23 +94,6 @@ function scriptedClient(script: readonly (LlmResult | LlmError)[]) {
     },
   };
   return { client, requests };
-}
-
-/** A scheduler that fires at once and records the waits it was asked for. */
-function instantScheduler() {
-  const waits: number[] = [];
-  const handle = {} as TimerHandle;
-  const scheduler: Scheduler = {
-    setTimeout(callback, ms) {
-      waits.push(ms);
-      callback();
-      return handle;
-    },
-    clearTimeout: () => undefined,
-    setInterval: () => handle,
-    clearInterval: () => undefined,
-  };
-  return { scheduler, waits };
 }
 
 const rateLimited = () => new LlmError('rate_limited', 'too many calls');
