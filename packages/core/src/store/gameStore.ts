@@ -1,3 +1,4 @@
+import type { CharacterStore } from './characterStore';
 import type { GameEvent } from '../events/gameEvent';
 
 /** The four ways to play; a game belongs to exactly one. */
@@ -30,3 +31,6 @@ export interface GameStore {
   reports(gameId: string): Promise<readonly unknown[]>;
   saveReport(gameId: string, kind: string, data: unknown): Promise<void>;
 }
+
+/** Everything the app stores: characters and games, behind one object per platform. */
+export type Store = CharacterStore & GameStore;
