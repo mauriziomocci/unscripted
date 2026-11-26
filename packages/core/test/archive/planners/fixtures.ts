@@ -1,4 +1,4 @@
-import type { Character } from '../../../src/archive/character';
+import type { Character, CharacterSnapshot } from '../../../src/archive/character';
 import type { ArchiveDeps } from '../../../src/archive/deps';
 import type { StoredCharacter } from '../../../src/store/characterStore';
 
@@ -26,6 +26,13 @@ export function makeCharacter(changes: Partial<Character> = {}): Character {
     status: 'vivo',
     ...changes,
   };
+}
+
+/** The character as the history keeps it: everything but the store's revision. */
+export function snapshotOf(character: Character): CharacterSnapshot {
+  const snapshot: Record<string, unknown> = { ...character };
+  delete snapshot.revision;
+  return snapshot as CharacterSnapshot;
 }
 
 /** A character as a store lists it with `includeArchived`. */
