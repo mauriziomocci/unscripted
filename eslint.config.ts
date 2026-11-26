@@ -123,4 +123,21 @@ export default defineConfig(
       ],
     },
   },
+  {
+    // Route handlers reach data only through injected services (FR-020).
+    files: ['apps/server/src/routes/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['drizzle-orm', 'drizzle-orm/*', 'pg', '**/db/**'],
+              message: 'Route handlers use services from deps; the ORM and the driver stay in db/.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 );
