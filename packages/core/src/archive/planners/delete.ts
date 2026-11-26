@@ -35,6 +35,7 @@ export function planDelete(
 function withoutRelationTo(character: Character, id: string, updated: string): Character {
   return {
     ...character,
+    updated,
     relations: (character.relations ?? []).filter((relation) => relation.to !== id),
   };
 }
