@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 /** One Vitest project per workspace, plus the repository scripts. */
 const PROJECT_ROOTS = [
@@ -26,7 +26,8 @@ const FLOORS = {
 export default defineConfig({
   test: {
     projects: PROJECT_ROOTS.map((root) => ({
-      test: { name: root, root },
+      // The vendored legacy tests are Node scripts, not Vitest suites: discovery skips them.
+      test: { name: root, root, exclude: [...configDefaults.exclude, '**/legacy/**'] },
     })),
     passWithNoTests: true,
     coverage: {

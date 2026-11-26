@@ -24,4 +24,11 @@ describe('root vitest configuration', () => {
       '**/*.d.ts',
     ]);
   });
+
+  it('keeps the vendored legacy scripts out of test discovery in every project', () => {
+    // The legacy tests are plain Node scripts (venture.test.js, romanzo.test.js), not Vitest suites.
+    const projects = (config.test?.projects ?? []) as { test?: { exclude?: string[] } }[];
+    expect(projects.length).toBeGreaterThan(0);
+    for (const project of projects) expect(project.test?.exclude).toContain('**/legacy/**');
+  });
 });
