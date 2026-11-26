@@ -69,6 +69,7 @@ export function extractJson(text: string): ExtractedJson {
     if (end === -1) return { ok: false }; // a cut-off answer must not yield one of its inner values
     const parsed = tryParse(text.slice(start, end + 1));
     if (parsed.ok) return parsed;
+    start = end; // resume after the failed stretch: its inner openers, strings included, are not answers
   }
   return { ok: false };
 }

@@ -57,4 +57,21 @@ describe('extractJson on text that is not an answer', () => {
       expect(extractJson(text)).toEqual({ ok: false });
     },
   );
+
+  it('does not return an inner value of an answer that is balanced but invalid', () => {
+    expect(extractJson('{"azione": {"tipo": "parla"},}')).toEqual({ ok: false });
+  });
+
+  it('does not read a value from inside a string of a broken answer', () => {
+    expect(extractJson('{"line": "[1,2]",}')).toEqual({ ok: false });
+  });
+
+  it('scans a hostile run of 20000 nested braces in linear time', () => {
+    const hostile = '{'.repeat(20_000) + '}'.repeat(20_000);
+    // eslint-disable-next-line no-restricted-globals -- taste-exempt: a test measures real elapsed time, the pure-core clock rule is for src
+    const started = performance.now();
+    expect(extractJson(hostile)).toEqual({ ok: false });
+    // eslint-disable-next-line no-restricted-globals -- taste-exempt: same measurement as above
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
 });
