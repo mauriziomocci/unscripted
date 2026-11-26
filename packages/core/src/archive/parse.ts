@@ -1,4 +1,5 @@
 import type { CharacterInput } from './character';
+import { blankCharacterInput } from './blank';
 import { archRoleKey } from './roles';
 import { TEXT_SECTION_KEYS } from './sections';
 
@@ -61,7 +62,6 @@ const MAX_AGE = 95;
 const MAX_ROLE_LENGTH = 40;
 const MAX_STYLE_LENGTH = 80;
 const MAX_DERIVED_SHORT_LENGTH = 200;
-const DEFAULT_AGE = 35;
 
 type Draft = { -readonly [K in keyof CharacterInput]: CharacterInput[K] };
 
@@ -77,28 +77,6 @@ interface ReaderState {
   readonly bodies: Record<string, string>;
   readonly buffer: string[];
   current: Outline | null;
-}
-
-/** The legacy blank sheet (`archBlank`, `archui.js:34`) without the keys the planners own. */
-function blankDraft(): Draft {
-  return {
-    schema: 'personaggio/1',
-    name: '',
-    sex: 'm',
-    age: DEFAULT_AGE,
-    temper: '',
-    short: '',
-    tags: [],
-    sections: {},
-    secrets: [],
-    goals: [],
-    relations: [],
-    status: 'vivo',
-    life: 1,
-    lives: [],
-    origin: null,
-    sessions: [],
-  };
 }
 
 /**
@@ -251,7 +229,10 @@ function completeDraft(state: ReaderState, fileName: string): void {
  */
 export function parseCharacterFile(text: string, fileName: string): ParsedCharacterFile {
   if (text.length > MAX_FILE_LENGTH) {
-    const draft = { ...blankDraft(), name: fileNameWithoutExtension(fileName) || 'Senza nome' };
+    const draft = {
+      ...blankCharacterInput(),
+      name: fileNameWithoutExtension(fileName) || 'Senza nome',
+    };
     return {
       character: draft,
       recognisedSections: 0,
@@ -260,7 +241,7 @@ export function parseCharacterFile(text: string, fileName: string): ParsedCharac
     };
   }
   const state: ReaderState = {
-    draft: blankDraft(),
+    draft: blankCharacterInput(),
     outline: [],
     bodies: {},
     buffer: [],

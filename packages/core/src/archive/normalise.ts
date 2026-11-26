@@ -1,3 +1,4 @@
+import { DEFAULT_AGE } from './blank';
 import type { CharacterInput } from './character';
 import { archEra } from './era';
 import { ARCHIVE_ROLE_KEYS } from './roles';
@@ -18,8 +19,6 @@ const MIN_AGE = 3;
 /** The age field of the editor allows 999 for novel characters, who can be aliens or robots (`archui.js:297`). */
 const MAX_AGE_NOVEL = 999;
 const MAX_AGE = 95;
-/** What an empty age field becomes (`archui.js:297`). */
-const DEFAULT_AGE = 35;
 const DEFAULT_RELATION_TYPE = 'conoscenti';
 
 const withoutBrackets = (text: string): string => text.trim().replace(/[<>]/g, '');

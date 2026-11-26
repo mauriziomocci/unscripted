@@ -36,24 +36,22 @@ export function mapReferenceId(reference: string): string {
   return reference === '' || isUuid(reference) ? reference : uuidV5(reference, LEGACY_ID_NAMESPACE);
 }
 
+/** The character with every relation target mapped by `mapReferenceId`. */
+export function withMappedRelations<T extends Pick<Character, 'relations'>>(character: T): T {
+  if (character.relations === undefined) return character;
+  const relations = character.relations.map((relation) => ({
+    ...relation,
+    to: mapReferenceId(relation.to),
+  }));
+  return { ...character, relations };
+}
+
 /**
  * The character with its id mapped by `mapIncomingId` and every relation target
- * mapped by `mapReferenceId`, the one id map of an import, a pack or a seed
- * (FR-017). A `legacyId` the record already had is kept.
+ * mapped by `mapReferenceId`, the one id map of a pack or a seed (FR-017). A
+ * `legacyId` the record already had is kept.
  */
 export function withMappedIds(character: Character, newId: () => string): Character {
   const { id, legacyId = character.legacyId } = mapIncomingId(character.id, newId);
-  return {
-    ...character,
-    id,
-    ...(legacyId === undefined ? {} : { legacyId }),
-    ...(character.relations === undefined
-      ? {}
-      : {
-          relations: character.relations.map((relation) => ({
-            ...relation,
-            to: mapReferenceId(relation.to),
-          })),
-        }),
-  };
+  return withMappedRelations({ ...character, id, ...(legacyId === undefined ? {} : { legacyId }) });
 }

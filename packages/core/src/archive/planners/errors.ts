@@ -32,3 +32,11 @@ export class ArchiveRequestError extends Error {
     this.code = code;
   }
 }
+
+/** The file offered to an import is not an `archivio/1` archive of valid characters; nothing was planned. */
+export class InvalidArchiveFileError extends Error {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = 'InvalidArchiveFileError';
+  }
+}
