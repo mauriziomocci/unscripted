@@ -5,3 +5,4 @@ The web app and the Claude artifact are two builds of the same game, from `packa
 | Area | Web app | Artifact | Reason | Closing work item |
 |---|---|---|---|---|
 | Everything | Not built yet | Playable (legacy single-file code, not yet on `packages/core`) | The web app and the shared core are being built | First release |
+| GameStore | Types only; no PostgreSQL implementation yet | Types only; no IndexedDB implementation yet | GameStore defined as types in WI-1, implemented in both stores in WI-2 (C5) | WI-2 |
