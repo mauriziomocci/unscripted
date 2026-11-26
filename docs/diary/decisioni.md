@@ -343,3 +343,26 @@ Le aggiunte al contratto API previste dal WI-2 in poi (sezione 2.9 della spec). 
 - **Deviazione:** dalla regola globale «sempre tramite git-commit-assistant», per il solo WI-1; il proprietario può ribaltarla al rientro.
 - **I cinque costi:** token: circa un decimo; tempo: molto meno attesa; qualità: invariata, con un controllo per blocco invece che per commit; modo di lavorare: una deviazione dichiarata; giocatore: nessun effetto.
 - **Stato:** provvisoria, in attesa di conferma.
+
+### D-26-10: il ramo JSON dell'import entra nel B2
+
+- **Chi ha deciso:** Matteo da solo, caso tecnico.
+- **Situazione:** lo sviluppatore della parte B del B2 ha trovato che FR-025 chiede al core di leggere anche un singolo file `.json` di personaggio, come fa il ramo JSON di `archParse` nel codice vecchio, ma nessun task lo copre.
+- **Decisione:** due passi inseriti, T059a (test rosso) e T059b (implementazione nel modulo del parser esistente, senza un gemello), assegnati alla parte C prima dei suoi task, e aggiunti alla tabella di copertura sotto FR-025.
+- **I cinque costi:** pochi token e pochi minuti; qualità: un requisito che sarebbe rimasto scoperto; giocatore: l'import di un singolo file JSON funziona come nell'artifact.
+- **Stato:** provvisoria, in attesa di conferma.
+
+### D-26-11: forme del contratto interno dell'archivio
+
+- **Chi ha deciso:** Matteo da solo, caso tecnico (contratto interno del core, non l'API HTTP).
+- **Decisioni:** il pianificatore della cancellazione riceve l'orologio e aggiorna `updated` come `archSave` (`archui.js:38, 294`); i pianificatori che creano una scheda producono l'etichetta d'origine del codice vecchio (`:62`, `:205`); il parser restituisce un'unione con discriminante, scheda o archivio, invece di un campo opzionale `archive`; conta le sezioni finite in «Altro» invece di un booleano; `planImport` restituisce anche il conteggio dei saltati; i pacchetti pronti arrivano a `StoreArchive` nelle sue dipendenze, non come terzo argomento.
+- **Motivo:** fedeltà al codice vecchio e una struttura dati che toglie i casi speciali invece di aggiungere campi opzionali.
+- **I cinque costi:** token e tempo modesti, un'attesa della parte C; qualità: la logica di salvataggio torna fedele; giocatore: nota di import, etichette e date come nell'artifact.
+- **Stato:** provvisoria, in attesa di conferma.
+
+### D-26-12: la finestra di oggi si allunga fino alle 22:00
+
+- **Parole del proprietario (in chat, 16:45 circa):** «Fermati alle 22 in una situazione stabile e sicura».
+- **Come lo registro:** autorizzazione al lavoro senza presidio dopo l'orario d'ufficio, per il port v1 (WI-1), da subito fino alle 22:00 come ora di fine. Il profilo di autonomia D-26-7 resta valido; questa è la finestra con ora di fine che il lavoro notturno richiede.
+- **Regole che valgono dopo le 21:00:** nessuna traccia aziendale (non ce ne sono: il repository è personale, i push verso `github.com/mauriziomocci/` sono permessi); nessun merge in rami condivisi o protetti; niente di irreversibile; alle 21:45 gli sviluppatori si fermano a un punto pulito, alle 22:00 tutto è committato, con i test dell'area toccata verdi, e il diario è chiuso.
+- **Stato:** registrata; vale per oggi.
