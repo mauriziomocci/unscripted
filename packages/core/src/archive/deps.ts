@@ -11,6 +11,6 @@ export interface ArchiveDeps {
 }
 
 /** The `updated` stamp of a save: the clock's now as an ISO string, as the legacy writes it (`archui.js:38`). */
-export function nowIso(deps: ArchiveDeps): string {
+export function nowIso(deps: Pick<ArchiveDeps, 'clock'>): string {
   return new Date(deps.clock.now()).toISOString();
 }
