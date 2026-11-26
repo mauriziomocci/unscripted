@@ -290,3 +290,19 @@ It is used by:
 9. Fleet Command played by the player or by an AI, chosen at setup and switchable in play.
 10. All the engagement features: battle effects, voices, fast forward, live bets, secret agendas, moving trust, landing party, medals, ranking and campaign.
 11. Everything goes into v1.
+
+## Addendum 2026-11-23: prose quality in the novel environment
+
+Real books written with the artifact showed recurring defects: scenes repeated across chapters, catchphrases and tics used in nearly every chapter, facts and clock times contradicting each other, an event told twice, obscure sentences (jokes recalling a rule before the reader knows it, over-compressed sentences after the second draft), formulaic chapter openings. One cause: the book had no state memory. The fix, now in the reference artifact (`qualita.js`, `romanzo.js`, `romanzoui.js`, tests in `tests/quality.test.js`):
+
+- **Story ledger** per work: central rule, timeline, fixed facts, beats done, recurring phrases with owner and usage count. Fed to scene, writing and check prompts; extended after every chapter from the writer's `registro` output.
+- **Outline** in the plan: one irreversible change per chapter; the answer to the central question only from 85% of the book (except the "situation" grade); recurring phrases capped at 3 per book, never in consecutive chapters.
+- **Clarity rule** (`CLARITY`) in every prompt that produces or changes prose.
+- **Deterministic checks** (`qualita.js`, pure): repeated 4-word runs across chapters (names and "X di Y" object phrases excluded), same opening formula, time going backwards, recurring phrases over the cap, repeated beats, exact single-occurrence sentence replacement.
+- **Picky reader** after every chapter (light tier): knows only what the book has shown (no central rule, ending or culprit), receives the deterministic findings, returns exact sentence replacements; a second pass when serious findings remain.
+- **Final reading** of the whole book at the end (main tier): cross-chapter contradictions fixed sentence by sentence, at most 3 targeted chapter rewrites (events told twice, repeated scenes), dangling threads listed, quality report.
+- **Text revision** for finished books (also series volumes): ledger rebuilt from the text, final reading, picky reader on every chapter; undo to the previous version.
+- Second draft no longer compresses (followed by the picky reader); the orientation pass varies chapter openings.
+- Cost for 25 pages with second draft: about 78 calls (was about 60).
+
+For Unscripted: `qualita.js` maps to a pure module in `packages/core` (novel/quality), the ledger and quality report join the novel data model, the new call kinds are `pignolo`, `rilettura`, `mirata`, `registro`. Real-book regression texts must not be committed (they contain real names): use `tools/bench_books.js` locally and the synthetic bench in tests.
