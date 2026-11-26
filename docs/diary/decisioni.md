@@ -333,3 +333,13 @@ Le aggiunte al contratto API previste dal WI-2 in poi (sezione 2.9 della spec). 
   - modo di lavorare: come chiede il proprietario;
   - giocatore: tutte le schede dell'artifact arrivano nella v1.
 - **Stato:** provvisoria, in attesa di conferma.
+
+### D-26-9: come si committa durante l'implementazione del WI-1
+
+- **Chi ha deciso:** il coordinatore, come Domenico, dopo aver sentito Matteo.
+- **Situazione:** la regola globale vuole ogni commit fatto dall'agente `git-commit-assistant`; i task del WI-1 sono 334, con un commit per ogni passo verde, e ogni passo è fatto da un agente sviluppatore che non può chiamare a sua volta un altro agente. Un giro di andata e ritorno per ogni commit farebbe crescere il contesto della sessione di coordinamento di circa 2.000 token a commit, cioè centinaia di migliaia di token, e la porterebbe a compattarsi più volte.
+- **Posizioni:** Matteo: il contenuto dei messaggi è già scritto e rivisto nei task (oggetto Conventional Commits per ogni passo, revisione del cancello leggero `CONVERGED`), quindi il rischio sta nella forma e nell'attribuzione, non nella scelta delle parole. Domenico: il costo di un commit per chiamata non compra qualità in più.
+- **Decisione:** l'agente sviluppatore fa il commit di ogni passo verde con l'oggetto scritto nel task e il paragrafo `CHANGE:`, senza alcuna attribuzione; alla chiusura di ogni blocco l'agente `git-commit-assistant` verifica tutti i commit del blocco (formato, ambito, assenza di attribuzione e di riferimenti all'IA) e corregge i messaggi difettosi prima di qualsiasi push. Nessun push senza quella verifica.
+- **Deviazione:** dalla regola globale «sempre tramite git-commit-assistant», per il solo WI-1; il proprietario può ribaltarla al rientro.
+- **I cinque costi:** token: circa un decimo; tempo: molto meno attesa; qualità: invariata, con un controllo per blocco invece che per commit; modo di lavorare: una deviazione dichiarata; giocatore: nessun effetto.
+- **Stato:** provvisoria, in attesa di conferma.
