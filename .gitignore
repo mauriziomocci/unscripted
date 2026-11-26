@@ -4,18 +4,22 @@ node_modules/
 
 # Builds
 dist/
+apps/artifact/dist/
 build/
 coverage/
 *.tsbuildinfo
 
-# Environment
-.envs/.local/
-.envs/.production/
+# Environment (the committed templates are the *.example files)
+.envs/.local/*
+!.envs/.local/*.example
+.envs/.production/*
+!.envs/.production/*.example
 .env
 .env.*
 !.env.example
 
 # Data
+backups/
 *.sqlite
 *.sqlite3
 data/
