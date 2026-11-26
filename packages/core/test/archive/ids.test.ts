@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { LEGACY_ID_NAMESPACE, mapIncomingId } from '../../src/archive/ids';
+import {
+  LEGACY_ID_NAMESPACE,
+  mapIncomingId,
+  mapReferenceId,
+  withMappedIds,
+} from '../../src/archive/ids';
 
 /**
  * Vectors computed once with Python's `uuid.uuid5` (an implementation
@@ -45,5 +50,43 @@ describe('mapIncomingId with an id that needs no mapping', () => {
     ['a number', 42],
   ])('asks for a fresh id for %s', (_name, id) => {
     expect(mapIncomingId(id, newId)).toEqual({ id: FRESH_ID });
+  });
+});
+
+describe('mapReferenceId', () => {
+  it('maps a legacy id like mapIncomingId does, keeps a uuid and an empty value, and draws nothing', () => {
+    expect(mapReferenceId('c_x1')).toBe(V5_OF_C_X1);
+    expect(mapReferenceId(FRESH_ID)).toBe(FRESH_ID);
+    expect(mapReferenceId('')).toBe('');
+  });
+});
+
+describe('withMappedIds', () => {
+  const bare = {
+    schema: 'personaggio/1',
+    id: 'c_x1',
+    version: 1,
+    revision: 1,
+    updated: 'u',
+    name: 'Ada',
+    sex: 'f',
+    age: 30,
+    status: 'vivo',
+  } as const;
+  const legacy = { ...bare, relations: [{ to: 'f_x1', type: 'amici' }] };
+
+  it('maps the id, keeps the legacy id and maps every relation target with the same map', () => {
+    const mapped = withMappedIds(legacy, newId);
+    expect(mapped).toMatchObject({ id: V5_OF_C_X1, legacyId: 'c_x1' });
+    expect(mapped.relations).toEqual([{ to: V5_OF_F_X1, type: 'amici' }]);
+  });
+
+  it('keeps a legacy id the record already carries when its id is a uuid', () => {
+    const uuid = { ...legacy, id: FRESH_ID, legacyId: 'c_old' };
+    expect(withMappedIds(uuid, newId)).toMatchObject({ id: FRESH_ID, legacyId: 'c_old' });
+  });
+
+  it('adds no relations to a record that has none', () => {
+    expect(withMappedIds(bare, newId)).not.toHaveProperty('relations');
   });
 });

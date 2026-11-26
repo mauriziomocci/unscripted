@@ -1,3 +1,4 @@
+import type { Character } from './character';
 import { v5 as uuidV5, validate as isUuid } from 'uuid';
 
 /**
@@ -23,4 +24,36 @@ export function mapIncomingId(id: unknown, newId: () => string): { id: string; l
   if (typeof id !== 'string' || id === '') return { id: newId() };
   if (isUuid(id)) return { id };
   return { id: uuidV5(id, LEGACY_ID_NAMESPACE), legacyId: id };
+}
+
+/**
+ * The id a relation `to` field becomes under the same map as the ids: a uuid
+ * and an empty value stay, any other string is a legacy id and gets its v5. It
+ * never draws a fresh id, so a relation always lands on the uuid its target
+ * got in the same import (FR-017).
+ */
+export function mapReferenceId(reference: string): string {
+  return reference === '' || isUuid(reference) ? reference : uuidV5(reference, LEGACY_ID_NAMESPACE);
+}
+
+/**
+ * The character with its id mapped by `mapIncomingId` and every relation target
+ * mapped by `mapReferenceId`, the one id map of an import, a pack or a seed
+ * (FR-017). A `legacyId` the record already had is kept.
+ */
+export function withMappedIds(character: Character, newId: () => string): Character {
+  const { id, legacyId = character.legacyId } = mapIncomingId(character.id, newId);
+  return {
+    ...character,
+    id,
+    ...(legacyId === undefined ? {} : { legacyId }),
+    ...(character.relations === undefined
+      ? {}
+      : {
+          relations: character.relations.map((relation) => ({
+            ...relation,
+            to: mapReferenceId(relation.to),
+          })),
+        }),
+  };
 }
