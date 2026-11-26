@@ -1,5 +1,6 @@
 import type { CharacterInput } from './character';
 import { archRoleKey } from './roles';
+import { TEXT_SECTION_KEYS } from './sections';
 
 /** A sheet read from a file: an editor preview, never stored as it is. */
 export interface ParsedCharacterFile {
@@ -29,18 +30,6 @@ const SECTION_SYNONYMS: readonly (readonly [key: string, pattern: RegExp])[] = [
   ['obiettivi', /obiettiv|scop|vuole|desider|goal/i],
   ['rapporti', /rapporti|relazioni|legami|conosce|relationships/i],
 ];
-
-/** The keys of the record's `sections`, in the legacy order; the three list sections are not among them. */
-const TEXT_SECTION_KEYS = [
-  'identita',
-  'storia',
-  'carattere',
-  'valori',
-  'paure',
-  'parlata',
-  'relazioni_stile',
-  'altro',
-] as const;
 
 /** Where a heading goes when no synonym fits; the text is kept, not used by the game. */
 const OTHER_SECTION = 'altro';
