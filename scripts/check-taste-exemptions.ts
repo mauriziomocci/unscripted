@@ -37,7 +37,7 @@ function typeScriptFiles(directory: string): string[] {
     const path = join(directory, entry.name);
     if (entry.isDirectory())
       return SKIPPED_DIRECTORIES.has(entry.name) ? [] : typeScriptFiles(path);
-    return /\.tsx?$/.test(entry.name) ? [path] : [];
+    return /\.(?:tsx?|[cm]?js)$/.test(entry.name) ? [path] : [];
   });
 }
 

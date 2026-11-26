@@ -196,8 +196,8 @@ export default defineConfig(
     },
   },
   {
-    // The mechanical taste gate (R-05): small, shallow, simple functions.
-    files: ['**/*.{ts,tsx}'],
+    // The mechanical taste gate (R-05): small, shallow, simple functions, in every language file.
+    files: ['**/*.{ts,tsx,js,mjs,cjs}'],
     rules: {
       'max-lines-per-function': ['error', { max: 40, skipBlankLines: true, skipComments: true }],
       'max-depth': ['error', 3],
@@ -205,12 +205,16 @@ export default defineConfig(
       'max-nested-callbacks': ['error', 3],
       'no-empty': 'error',
       'no-unsafe-finally': 'error',
-      '@typescript-eslint/no-floating-promises': 'error',
     },
   },
   {
-    // Callers decide by error type: a handler that does not rethrow hides the failure (R-05).
+    // Needs type information, so it cannot run on JavaScript files.
     files: ['**/*.{ts,tsx}'],
+    rules: { '@typescript-eslint/no-floating-promises': 'error' },
+  },
+  {
+    // Callers decide by error type: a handler that does not rethrow hides the failure (R-05).
+    files: ['**/*.{ts,tsx,js,mjs,cjs}'],
     plugins: { local: { rules: { 'no-swallowed-error': noSwallowedError } } },
     rules: { 'local/no-swallowed-error': 'error' },
   },
