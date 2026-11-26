@@ -25,6 +25,8 @@ export default defineConfig(
       '**/dist/**',
       'apps/server/drizzle/**',
       'coverage/**',
+      // Inputs of the checkers' own tests: they contain violations on purpose.
+      '**/fixtures/**',
       // Contract drafts of the specs, not product code.
       'specs/**',
     ],

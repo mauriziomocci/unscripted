@@ -7,3 +7,4 @@ specs/
 docs/
 .specify/
 .claude/
+**/fixtures/

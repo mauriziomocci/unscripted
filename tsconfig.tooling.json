@@ -6,5 +6,6 @@
     "rootDir": ".",
     "outDir": "dist/tooling"
   },
-  "include": ["*.ts", "scripts", "eslint-rules"]
+  "include": ["*.ts", "scripts", "eslint-rules"],
+  "exclude": ["scripts/test/fixtures"]
 }

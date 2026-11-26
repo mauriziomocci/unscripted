@@ -7,7 +7,7 @@
     "node": ">=22 <23"
   },
   "scripts": {
-    "lint": "eslint --flag unstable_native_nodejs_ts_config .",
+    "lint": "eslint --flag unstable_native_nodejs_ts_config . && node scripts/check-taste-exemptions.ts",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,mjs,cjs,json,yml,yaml,css,html}\"",
     "typecheck": "tsc -b",
     "test": "vitest run --coverage",
